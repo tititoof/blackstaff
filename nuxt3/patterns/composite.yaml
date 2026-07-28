@@ -1,0 +1,280 @@
+# Pattern Blackstaff — composite
+# Éditer librement les templates (bloc | multi-lignes)
+# Après édition : python3 yaml-to-json.py ./nuxt3/patterns/
+---
+pattern:
+  name: Composite — Nuxt 3
+  description: Agence les objets en arborescences pour les traiter comme des objets individuels. Idéal pour les menus de navigation
+    hiérarchiques, les arbres de catégories, les permissions hiérarchiques.
+  whenToUse:
+    mustMatch:
+    - Construire des menus de navigation hiérarchiques avec sous-items
+    - Construire des arbres de catégories ou de tags
+    - Construire des permissions hiérarchiques
+    - 'Traiter des objets simples et des groupes d''objets de façon identique'
+    - Avoir une structure en arbre avec une interface commune
+    shouldMatch:
+    - Utiliser Nuxt 3 avec TypeScript
+    - 'Utiliser un Builder pour construire l''arbre'
+    - Avoir besoin de traversée récursive transparente
+    mustNotMatch:
+    - Structure plate sans hiérarchie
+    - 'Un seul niveau d''objets sans imbrication'
+    - 'Hiérarchie plus de 3 niveaux (repenser l''architecture)'
+    examples:
+    - prompt: Créer un système de navigation hiérarchique avec sous-menus
+      match: true
+      reason: 'Arbre d''items de menu traités de façon uniforme.'
+    - prompt: Créer un arbre de permissions admin/editor/reader
+      match: true
+      reason: Hiérarchie de permissions avec inclusion récursive.
+    - prompt: 'Créer une liste plate d''articles'
+      match: false
+      reason: Structure plate — pas besoin du pattern Composite.
+    decisionTree:
+      question1: As-tu une structure hiérarchique en arbre à représenter ?
+      ifYes:
+        question2: Les feuilles et les groupes doivent-ils être traités de façon identique ?
+        ifYes: ✅ Utiliser ce pattern
+        ifNo: ⚠️ Envisager une structure de données simple
+      ifNo: ❌ Ne pas utiliser ce pattern
+  files:
+  - id: 1
+    file: 'utils/composite/{composite}/interfaces.ts'
+    type: type
+    description: 'Interface commune du composant {Composite} — feuilles et groupes l''implémentent.'
+    template: |-
+      // utils/composite/{composite}/interfaces.ts
+
+      // Interface commune — feuilles et groupes l'implémentent
+      export interface {Composite}Component {
+        label: string
+        // Méthode commune traitée identiquement pour feuilles et groupes
+        render(): {Composite}Rendered
+        isLeaf(): boolean
+      }
+
+      // Format de rendu final
+      export interface {Composite}Rendered {
+        label:     string
+        // Ajoute ici les propriétés de la feuille (href, icon, etc.)
+        children?: {Composite}Rendered[]
+      }
+  - id: 2
+    file: 'utils/composite/{composite}/{Composite}Tree.ts'
+    type: util
+    description: 'Feuille, groupe et builder du Composite {Composite}.'
+    template: |-
+      // utils/composite/{composite}/{Composite}Tree.ts
+      import type { {Composite}Component, {Composite}Rendered } from './interfaces'
+
+      // Feuille — élément simple sans enfants
+      export class {Composite}Leaf implements {Composite}Component {
+        constructor(
+          public label: string,
+          // Ajoute ici les propriétés spécifiques à la feuille
+          // Exemple : public href: string, public icon?: string
+        ) {}
+
+        isLeaf(): boolean {
+          return true
+        }
+
+        render(): {Composite}Rendered {
+          return {
+            label: this.label,
+            // Ajoute ici le rendu de la feuille
+          }
+        }
+      }
+
+      // Groupe — contient des enfants (feuilles ou autres groupes)
+      export class {Composite}Group implements {Composite}Component {
+        private children: {Composite}Component[] = []
+
+        constructor(
+          public label: string,
+          // Ajoute ici les propriétés du groupe
+        ) {}
+
+        add(item: {Composite}Component): this {
+          this.children.push(item)
+          return this
+        }
+
+        remove(label: string): this {
+          this.children = this.children.filter(c => c.label !== label)
+          return this
+        }
+
+        isLeaf(): boolean {
+          return false
+        }
+
+        // render() est récursif — traverse l'arbre transparentement
+        render(): {Composite}Rendered {
+          return {
+            label:    this.label,
+            children: this.children.map(c => c.render())
+          }
+        }
+      }
+
+      // Builder — construit l'arbre sans `new` direct dans les composables
+      export class {Composite}Builder {
+        private items: {Composite}Component[] = []
+
+        addLeaf(
+          label: string,
+          // Ajoute ici les paramètres de la feuille
+        ): this {
+          this.items.push(new {Composite}Leaf(label))
+          return this
+        }
+
+        addGroup(
+          label: string,
+          build?: (group: {Composite}Group) => void
+        ): this {
+          const group = new {Composite}Group(label)
+          if (build) build(group)
+          this.items.push(group)
+          return this
+        }
+
+        build(): {Composite}Rendered[] {
+          return this.items.map(item => item.render())
+        }
+      }
+
+      export const create{Composite} = (): {Composite}Builder => new {Composite}Builder()
+  - id: 3
+    file: 'composables/use{Composite}.ts'
+    type: composable
+    description: 'Composable construisant l''arbre {Composite} dynamiquement selon le contexte.'
+    template: |-
+      // composables/use{Composite}.ts
+      import { create{Composite} } from '~/utils/composite/{composite}/{Composite}Tree'
+      import type { {Composite}Rendered } from '~/utils/composite/{composite}/interfaces'
+
+      export const use{Composite} = () => {
+        const tree = computed<{Composite}Rendered[]>(() => {
+          const builder = create{Composite}()
+
+          // Ajoute ici la construction dynamique de l'arbre
+          // Exemple pour un menu :
+          // builder
+          //   .addLeaf('Accueil', '/', 'mdi-home')
+          //   .addGroup('Section', 'mdi-folder', group => {
+          //     group.add(new {Composite}Leaf('Item A', '/a'))
+          //     group.add(new {Composite}Leaf('Item B', '/b'))
+          //   })
+
+          return builder.build()
+        })
+
+        return { tree }
+      }
+  - id: 4
+    file: 'tests/utils/composite/{composite}/{Composite}Tree.spec.ts'
+    type: test
+    testedFileId: 2
+    description: 'Tests unitaires du Composite {Composite} — feuille, groupe, récursivité.'
+    template: |-
+      // tests/utils/composite/{composite}/{Composite}Tree.spec.ts
+      import { describe, it, expect } from 'vitest'
+      import {
+        {Composite}Leaf,
+        {Composite}Group,
+        create{Composite}
+      } from '~/utils/composite/{composite}/{Composite}Tree'
+
+      describe('{Composite}Tree', () => {
+
+        describe('{Composite}Leaf', () => {
+          it('isLeaf() retourne true', () => {
+            const leaf = new {Composite}Leaf('Item')
+            expect(leaf.isLeaf()).toBe(true)
+          })
+
+          it('render() retourne le bon label', () => {
+            const leaf = new {Composite}Leaf('Item')
+            expect(leaf.render().label).toBe('Item')
+          })
+
+          it('render() ne retourne pas de children', () => {
+            const leaf = new {Composite}Leaf('Item')
+            expect(leaf.render().children).toBeUndefined()
+          })
+        })
+
+        describe('{Composite}Group', () => {
+          it('isLeaf() retourne false', () => {
+            const group = new {Composite}Group('Groupe')
+            expect(group.isLeaf()).toBe(false)
+          })
+
+          it('render() retourne les children', () => {
+            const group = new {Composite}Group('Groupe')
+            group.add(new {Composite}Leaf('Enfant A'))
+            group.add(new {Composite}Leaf('Enfant B'))
+            const rendered = group.render()
+            expect(rendered.children).toHaveLength(2)
+          })
+
+          it('remove() retire un enfant par label', () => {
+            const group = new {Composite}Group('Groupe')
+            group.add(new {Composite}Leaf('A')).add(new {Composite}Leaf('B'))
+            group.remove('A')
+            expect(group.render().children).toHaveLength(1)
+          })
+
+          it('render() est récursif — group dans group', () => {
+            const root  = new {Composite}Group('Root')
+            const child = new {Composite}Group('Child')
+            child.add(new {Composite}Leaf('Deep'))
+            root.add(child)
+            const rendered = root.render()
+            expect(rendered.children?.[0].children?.[0].label).toBe('Deep')
+          })
+        })
+
+        describe('{Composite}Builder', () => {
+          it('build() retourne un tableau de rendus', () => {
+            const result = create{Composite}()
+              .addLeaf('Item')
+              .build()
+            expect(result).toHaveLength(1)
+          })
+
+          it('feuilles et groupes sont traités identiquement par build()', () => {
+            const result = create{Composite}()
+              .addLeaf('Feuille')
+              .addGroup('Groupe')
+              .build()
+            expect(result).toHaveLength(2)
+            result.forEach(item => expect(item.label).toBeDefined())
+          })
+        })
+
+      })
+  commentaire: 'Composite générique pour Nuxt 3 + TypeScript. Placeholders : {composite} (kebab-case) et {Composite} (PascalCase).
+    Exemple : composite=menu, Composite=Menu ou composite=permission, Composite=Permission.'
+  actions:
+  - id: 1
+    file: 'utils/composite/{composite}/interfaces.ts'
+    type: type
+    description: Interface commune composant et rendu
+  - id: 2
+    file: 'utils/composite/{composite}/{Composite}Tree.ts'
+    type: util
+    description: Feuille, groupe, builder et factory
+  - id: 3
+    file: 'composables/use{Composite}.ts'
+    type: composable
+    description: 'Composable construisant l''arbre dynamiquement'
+  - id: 4
+    file: 'tests/utils/composite/{composite}/{Composite}Tree.spec.ts'
+    type: test
+    testedFileId: 2
+    description: Tests feuille, groupe et récursivité

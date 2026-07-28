@@ -1,0 +1,238 @@
+# Pattern Blackstaff — visitor
+# Éditer librement les templates (bloc | multi-lignes)
+# Après édition : python3 yaml-to-json.py ./nuxt3/patterns/
+---
+pattern:
+  name: Visiteur (Visitor) — Nuxt 3
+  description: Sépare les algorithmes des objets sur lesquels ils opèrent. Ajouter de nouvelles opérations sans modifier les
+    classes existantes.
+  whenToUse:
+    mustMatch:
+    - 'Ajouter de nouvelles opérations sur des structures d''objets sans les modifier'
+    - 'Appliquer des algorithmes différents sur des types d''objets hétérogènes'
+    - Exporter des données dans plusieurs formats sans toucher aux modèles
+    - Traverser une structure complexe (arbre, AST) avec différents traitements
+    shouldMatch:
+    - Utiliser Nuxt 3 avec TypeScript
+    - 'Avoir plusieurs types d''objets visités (Article, Category...)'
+    - Avoir plusieurs visiteurs pour les mêmes objets (Markdown, JSON, CSV)
+    mustNotMatch:
+    - 'Structure simple avec un seul type d''objet (utiliser Strategy)'
+    - 'Modifier l''état des objets visités (Visitor = lecture seule)'
+    examples:
+    - prompt: Exporter articles et catégories en Markdown et JSON
+      match: true
+      reason: Plusieurs types visités × plusieurs formats visiteurs.
+    - prompt: Calculer des statistiques sur différents types de contenu
+      match: true
+      reason: Algorithme appliqué sur structure hétérogène.
+    - prompt: 'Trier une liste d''articles'
+      match: false
+      reason: Un seul type, un seul algorithme — utiliser Strategy.
+  files:
+  - id: 1
+    file: 'utils/visitors/{visitor}/interfaces.ts'
+    type: type
+    description: 'Interfaces des éléments visités et du visiteur {Visitor}.'
+    template: |-
+      // utils/visitors/{visitor}/interfaces.ts
+
+      // Éléments visités — chaque type implémente accept()
+      export interface {Visitor}ElementA {
+        type: 'elementA'
+        // Ajoute ici les champs de l'élément A
+      }
+
+      export interface {Visitor}ElementB {
+        type: 'elementB'
+        // Ajoute ici les champs de l'élément B
+      }
+
+      // Interface du visiteur — une méthode par type d'élément
+      export interface {Visitor}Visitor {
+        visitElementA(element: {Visitor}ElementA): string
+        visitElementB(element: {Visitor}ElementB): string
+        // Ajoute ici les méthodes pour chaque type d'élément
+      }
+
+      // Interface Visitable — tous les éléments l'implémentent
+      export interface Visitable {
+        accept(visitor: {Visitor}Visitor): string
+      }
+  - id: 2
+    file: 'utils/visitors/{visitor}/{Visitor}Nodes.ts'
+    type: util
+    description: 'Nœuds visitables pour {Visitor} — implémentent accept().'
+    template: |-
+      // utils/visitors/{visitor}/{Visitor}Nodes.ts
+      import type { {Visitor}ElementA, {Visitor}ElementB, {Visitor}Visitor, Visitable } from './interfaces'
+
+      // Nœud A — délègue au visiteur via accept()
+      export class {Visitor}NodeA implements Visitable {
+        constructor(public element: {Visitor}ElementA) {}
+
+        accept(visitor: {Visitor}Visitor): string {
+          return visitor.visitElementA(this.element)
+        }
+      }
+
+      // Nœud B — délègue au visiteur via accept()
+      export class {Visitor}NodeB implements Visitable {
+        constructor(public element: {Visitor}ElementB) {}
+
+        accept(visitor: {Visitor}Visitor): string {
+          return visitor.visitElementB(this.element)
+        }
+      }
+
+      // Factory — crée le bon nœud selon le type de l'élément
+      export const create{Visitor}Node = (
+        element: {Visitor}ElementA | {Visitor}ElementB
+      ): Visitable => {
+        if (element.type === 'elementA') return new {Visitor}NodeA(element)
+        return new {Visitor}NodeB(element as {Visitor}ElementB)
+      }
+  - id: 3
+    file: 'utils/visitors/{visitor}/{Visitor}Visitors.ts'
+    type: util
+    description: 'Visiteurs concrets pour {Visitor} — un par format/opération.'
+    template: |-
+      // utils/visitors/{visitor}/{Visitor}Visitors.ts
+      import type { {Visitor}Visitor, {Visitor}ElementA, {Visitor}ElementB } from './interfaces'
+
+      // Visiteur concret A (ex: export Markdown, calcul statistiques)
+      export class {Visitor}VisitorA implements {Visitor}Visitor {
+        visitElementA(element: {Visitor}ElementA): string {
+          // Ajoute ici le traitement de l'élément A par le visiteur A
+          return `A visitA: ${JSON.stringify(element)}`
+        }
+
+        visitElementB(element: {Visitor}ElementB): string {
+          // Ajoute ici le traitement de l'élément B par le visiteur A
+          return `B visitA: ${JSON.stringify(element)}`
+        }
+      }
+
+      // Visiteur concret B (ex: export JSON, calcul différent)
+      export class {Visitor}VisitorB implements {Visitor}Visitor {
+        visitElementA(element: {Visitor}ElementA): string {
+          return JSON.stringify(element, null, 2)
+        }
+
+        visitElementB(element: {Visitor}ElementB): string {
+          return JSON.stringify(element, null, 2)
+        }
+      }
+  - id: 4
+    file: 'composables/use{Visitor}.ts'
+    type: composable
+    description: 'Composable exposant le visiteur {Visitor} — les pages utilisent uniquement ce composable.'
+    template: |-
+      // composables/use{Visitor}.ts
+      import { create{Visitor}Node } from '~/utils/visitors/{visitor}/{Visitor}Nodes'
+      import { {Visitor}VisitorA, {Visitor}VisitorB } from '~/utils/visitors/{visitor}/{Visitor}Visitors'
+      import type { {Visitor}ElementA, {Visitor}ElementB } from '~/utils/visitors/{visitor}/interfaces'
+
+      export const use{Visitor} = () => {
+        const applyVisitorA = (element: {Visitor}ElementA | {Visitor}ElementB): string => {
+          const visitor = new {Visitor}VisitorA()
+          const node    = create{Visitor}Node(element)
+          return node.accept(visitor)
+        }
+
+        const applyVisitorB = (element: {Visitor}ElementA | {Visitor}ElementB): string => {
+          const visitor = new {Visitor}VisitorB()
+          const node    = create{Visitor}Node(element)
+          return node.accept(visitor)
+        }
+
+        return { applyVisitorA, applyVisitorB }
+      }
+  - id: 5
+    file: 'tests/utils/visitors/{visitor}/{Visitor}Visitors.spec.ts'
+    type: test
+    testedFileId: 3
+    description: 'Tests des visiteurs {Visitor} — traitement par type d''élément.'
+    template: |-
+      // tests/utils/visitors/{visitor}/{Visitor}Visitors.spec.ts
+      import { describe, it, expect } from 'vitest'
+      import { {Visitor}VisitorA, {Visitor}VisitorB } from '~/utils/visitors/{visitor}/{Visitor}Visitors'
+      import { {Visitor}NodeA, {Visitor}NodeB, create{Visitor}Node } from '~/utils/visitors/{visitor}/{Visitor}Nodes'
+
+      const mockElementA = { type: 'elementA' as const }
+      const mockElementB = { type: 'elementB' as const }
+
+      describe('{Visitor}VisitorA', () => {
+        const visitor = new {Visitor}VisitorA()
+
+        it('visitElementA() traite l\'élément A', () => {
+          const result = visitor.visitElementA(mockElementA)
+          expect(typeof result).toBe('string')
+        })
+
+        it('visitElementB() traite l\'élément B', () => {
+          const result = visitor.visitElementB(mockElementB)
+          expect(typeof result).toBe('string')
+        })
+      })
+
+      describe('{Visitor}VisitorB', () => {
+        const visitor = new {Visitor}VisitorB()
+
+        it('visitElementA() retourne un résultat différent de VisitorA', () => {
+          const visitorA = new {Visitor}VisitorA()
+          const resultA  = visitorA.visitElementA(mockElementA)
+          const resultB  = visitor.visitElementA(mockElementA)
+          // Les deux visiteurs produisent des résultats différents sur le même élément
+          expect(typeof resultB).toBe('string')
+        })
+      })
+
+      describe('accept() via create{Visitor}Node()', () => {
+        it('NodeA délègue au bon visiteur', () => {
+          const node    = create{Visitor}Node(mockElementA)
+          const visitor = new {Visitor}VisitorA()
+          const result  = node.accept(visitor)
+          expect(typeof result).toBe('string')
+        })
+
+        it('NodeB délègue au bon visiteur', () => {
+          const node    = create{Visitor}Node(mockElementB)
+          const visitor = new {Visitor}VisitorA()
+          const result  = node.accept(visitor)
+          expect(typeof result).toBe('string')
+        })
+
+        it('le même nœud accepte différents visiteurs', () => {
+          const node      = create{Visitor}Node(mockElementA)
+          const visitorA  = new {Visitor}VisitorA()
+          const visitorB  = new {Visitor}VisitorB()
+          const resultA   = node.accept(visitorA)
+          const resultB   = node.accept(visitorB)
+          expect(resultA).not.toBe(resultB)
+        })
+      })
+  commentaire: 'Visiteur générique pour Nuxt 3. Placeholders : {visitor} (kebab-case) et {Visitor} (PascalCase). Exemple :
+    visitor=export, Visitor=Export.'
+  actions:
+  - id: 1
+    file: 'utils/visitors/{visitor}/interfaces.ts'
+    type: type
+    description: Interfaces éléments, visiteur et Visitable
+  - id: 2
+    file: 'utils/visitors/{visitor}/{Visitor}Nodes.ts'
+    type: util
+    description: Nœuds visitables et factory
+  - id: 3
+    file: 'utils/visitors/{visitor}/{Visitor}Visitors.ts'
+    type: util
+    description: Visiteurs concrets par format/opération
+  - id: 4
+    file: 'composables/use{Visitor}.ts'
+    type: composable
+    description: Composable exposant le visiteur
+  - id: 5
+    file: 'tests/utils/visitors/{visitor}/{Visitor}Visitors.spec.ts'
+    type: test
+    testedFileId: 3
+    description: Tests des visiteurs et accept()

@@ -1,0 +1,328 @@
+# Pattern Blackstaff — decorator
+# Éditer librement les templates (bloc | multi-lignes)
+# Après édition : python3 yaml-to-json.py ./nuxt3/patterns/
+---
+pattern:
+  name: Décorateur (Decorator) — Nuxt 3
+  description: Affecte dynamiquement de nouveaux comportements à des objets via des emballeurs. Idéal pour ajouter du logging,
+    du cache, de la validation ou du retry à un service API sans modifier sa logique.
+  whenToUse:
+    mustMatch:
+    - Ajouter du logging à un service sans modifier son code
+    - 'Ajouter du caching à un service d''API sans modifier sa logique'
+    - Ajouter du retry automatique sur les appels API
+    - 'Ajouter de la validation ou gestion d''erreur enrichie autour d''un service'
+    - Empiler des comportements transversaux de façon modulaire
+    shouldMatch:
+    - Utiliser Nuxt 3 avec TypeScript
+    - Avoir une interface de service bien définie
+    - 'Vouloir activer/désactiver des comportements selon l''environnement'
+    mustNotMatch:
+    - 'Modifier la logique métier d''un service (pas un comportement transversal)'
+    - 'Créer des variantes d''une famille d''objets (utiliser Abstract Factory)'
+    - Adapter deux interfaces (utiliser Adapter)
+    examples:
+    - prompt: Ajouter du cache et du logging sur le service articles
+      match: true
+      reason: Comportements transversaux empilables sans modifier le service.
+    - prompt: Ajouter du retry automatique sur les appels API
+      match: true
+      reason: 'Comportement transversal autour d''un service existant.'
+    - prompt: Changer la logique de tri des articles
+      match: false
+      reason: Logique métier — modifier directement le service.
+    decisionTree:
+      question1: Veux-tu ajouter un comportement transversal à un service existant ?
+      ifYes:
+        question2: Ce comportement est-il indépendant de la logique métier ?
+        ifYes: ✅ Utiliser ce pattern
+        ifNo: ❌ Modifier directement le service
+      ifNo: ❌ Ne pas utiliser ce pattern
+  files:
+  - id: 1
+    file: 'utils/decorators/{decorator}/interfaces.ts'
+    type: type
+    description: 'Interface commune du service {Decorator} que les décorateurs wrappent.'
+    template: |-
+      // utils/decorators/{decorator}/interfaces.ts
+
+      // Interface commune — service de base et tous les décorateurs l'implémentent
+      export interface {Decorator}Service {
+        list(page?: number): Promise<unknown[]>
+        get(id: number): Promise<unknown>
+        create(payload: unknown): Promise<unknown>
+        update(id: number, payload: unknown): Promise<unknown>
+        remove(id: number): Promise<void>
+        // Ajoute ici les méthodes spécifiques à ton service
+      }
+  - id: 2
+    file: 'utils/decorators/{decorator}/{Decorator}BaseDecorator.ts'
+    type: util
+    description: 'Décorateur de base — délègue tout à l''objet wrappé. Les décorateurs concrets l''étendent.'
+    template: |-
+      // utils/decorators/{decorator}/{Decorator}BaseDecorator.ts
+      import type { {Decorator}Service } from './interfaces'
+
+      // Décorateur abstrait de base — délègue tout à l'implémentation wrappée
+      export abstract class {Decorator}BaseDecorator implements {Decorator}Service {
+        constructor(protected wrapped: {Decorator}Service) {}
+
+        list(page = 1)                       { return this.wrapped.list(page) }
+        get(id: number)                      { return this.wrapped.get(id) }
+        create(payload: unknown)             { return this.wrapped.create(payload) }
+        update(id: number, payload: unknown) { return this.wrapped.update(id, payload) }
+        remove(id: number)                   { return this.wrapped.remove(id) }
+      }
+  - id: 3
+    file: 'utils/decorators/{decorator}/{Decorator}Decorators.ts'
+    type: util
+    description: 'Décorateurs concrets pour {Decorator} : logging, cache, retry.'
+    template: |-
+      // utils/decorators/{decorator}/{Decorator}Decorators.ts
+      import { {Decorator}BaseDecorator } from './{Decorator}BaseDecorator'
+
+      // ── Décorateur de logging ─────────────────────────────────────────────
+      export class {Decorator}LoggingDecorator extends {Decorator}BaseDecorator {
+        constructor(wrapped: InstanceType<typeof {Decorator}BaseDecorator>['wrapped'], private context: string) {
+          super(wrapped)
+        }
+
+        async list(page = 1) {
+          console.info(`[${this.context}] list(page=${page})`)
+          const result = await this.wrapped.list(page)
+          console.info(`[${this.context}] list → ${(result as unknown[]).length} items`)
+          return result
+        }
+
+        async create(payload: unknown) {
+          console.info(`[${this.context}] create`, payload)
+          const result = await this.wrapped.create(payload)
+          console.info(`[${this.context}] create → OK`)
+          return result
+        }
+      }
+
+      // ── Décorateur de cache ───────────────────────────────────────────────
+      export class {Decorator}CachingDecorator extends {Decorator}BaseDecorator {
+        private cache = new Map<string, { data: unknown; expiresAt: number }>()
+
+        constructor(wrapped: InstanceType<typeof {Decorator}BaseDecorator>['wrapped'], private ttlMs = 30_000) {
+          super(wrapped)
+        }
+
+        private getCached<R>(key: string): R | null {
+          const entry = this.cache.get(key)
+          if (!entry) return null
+          if (Date.now() > entry.expiresAt) { this.cache.delete(key); return null }
+          return entry.data as R
+        }
+
+        private setCached(key: string, data: unknown): void {
+          this.cache.set(key, { data, expiresAt: Date.now() + this.ttlMs })
+        }
+
+        async list(page = 1) {
+          const key    = `list:${page}`
+          const cached = this.getCached(key)
+          if (cached) return cached as unknown[]
+          const result = await this.wrapped.list(page)
+          this.setCached(key, result)
+          return result
+        }
+
+        async get(id: number) {
+          const key    = `get:${id}`
+          const cached = this.getCached(key)
+          if (cached) return cached
+          const result = await this.wrapped.get(id)
+          this.setCached(key, result)
+          return result
+        }
+
+        invalidate(): void {
+          this.cache.clear()
+        }
+      }
+
+      // ── Décorateur de retry ───────────────────────────────────────────────
+      export class {Decorator}RetryDecorator extends {Decorator}BaseDecorator {
+        constructor(
+          wrapped: InstanceType<typeof {Decorator}BaseDecorator>['wrapped'],
+          private maxRetries = 3,
+          private delayMs    = 1000
+        ) {
+          super(wrapped)
+        }
+
+        private async withRetry<R>(fn: () => Promise<R>): Promise<R> {
+          let lastError: unknown
+          for (let attempt = 1; attempt <= this.maxRetries; attempt++) {
+            try {
+              return await fn()
+            } catch (error) {
+              lastError = error
+              if (attempt < this.maxRetries) {
+                await new Promise(resolve => setTimeout(resolve, this.delayMs * attempt))
+              }
+            }
+          }
+          throw lastError
+        }
+
+        list(page = 1)       { return this.withRetry(() => this.wrapped.list(page)) }
+        get(id: number)      { return this.withRetry(() => this.wrapped.get(id)) }
+        create(p: unknown)   { return this.withRetry(() => this.wrapped.create(p)) }
+      }
+  - id: 4
+    file: 'composables/{decorator}/use{Decorator}Service.ts'
+    type: composable
+    description: 'Composable assemblant le service {Decorator} avec les décorateurs appropriés.'
+    template: |-
+      // composables/{decorator}/use{Decorator}Service.ts
+      import type { {Decorator}Service } from '~/utils/decorators/{decorator}/interfaces'
+      import {
+        {Decorator}LoggingDecorator,
+        {Decorator}CachingDecorator,
+        {Decorator}RetryDecorator
+      } from '~/utils/decorators/{decorator}/{Decorator}Decorators'
+
+      // Service de base — implémentation sans décorateurs
+      class {Decorator}BaseService implements {Decorator}Service {
+        // Ajoute ici l'implémentation de base du service
+        async list(page = 1)                  { return [] }
+        async get(id: number)                 { return {} }
+        async create(payload: unknown)        { return {} }
+        async update(id: number, p: unknown)  { return {} }
+        async remove(id: number)              { return }
+      }
+
+      export const use{Decorator}Service = () => {
+        // Empiler les décorateurs — l'ordre compte :
+        // retry (plus proche du réseau) → cache → logging (plus proche de l'appel)
+        const base    = new {Decorator}BaseService()
+        const retried = new {Decorator}RetryDecorator(base, 3)
+        const cached  = new {Decorator}CachingDecorator(retried, 30_000)
+        const service = new {Decorator}LoggingDecorator(cached, '{Decorator}')
+
+        return {
+          list:   (page?: number)               => service.list(page),
+          get:    (id: number)                  => service.get(id),
+          create: (payload: unknown)            => service.create(payload),
+          update: (id: number, p: unknown)      => service.update(id, p),
+          remove: (id: number)                  => service.remove(id)
+        }
+      }
+  - id: 5
+    file: 'tests/utils/decorators/{decorator}/{Decorator}Decorators.spec.ts'
+    type: test
+    testedFileId: 3
+    description: 'Tests unitaires des décorateurs {Decorator} — logging, cache, retry.'
+    template: |-
+      // tests/utils/decorators/{decorator}/{Decorator}Decorators.spec.ts
+      import { describe, it, expect, vi, beforeEach } from 'vitest'
+      import {
+        {Decorator}LoggingDecorator,
+        {Decorator}CachingDecorator,
+        {Decorator}RetryDecorator
+      } from '~/utils/decorators/{decorator}/{Decorator}Decorators'
+      import type { {Decorator}Service } from '~/utils/decorators/{decorator}/interfaces'
+
+      // Service mock de base
+      const mockService: {Decorator}Service = {
+        list:   vi.fn().mockResolvedValue([{ id: 1 }, { id: 2 }]),
+        get:    vi.fn().mockResolvedValue({ id: 1 }),
+        create: vi.fn().mockResolvedValue({ id: 3 }),
+        update: vi.fn().mockResolvedValue({ id: 1 }),
+        remove: vi.fn().mockResolvedValue(undefined)
+      }
+
+      beforeEach(() => vi.clearAllMocks())
+
+      describe('{Decorator}LoggingDecorator', () => {
+        it('délègue list() au service wrappé', async () => {
+          const service = new {Decorator}LoggingDecorator(mockService, 'Test')
+          await service.list(1)
+          expect(mockService.list).toHaveBeenCalledWith(1)
+        })
+
+        it('délègue create() au service wrappé', async () => {
+          const service = new {Decorator}LoggingDecorator(mockService, 'Test')
+          await service.create({ name: 'test' })
+          expect(mockService.create).toHaveBeenCalledWith({ name: 'test' })
+        })
+      })
+
+      describe('{Decorator}CachingDecorator', () => {
+        it('retourne le cache au deuxième appel list()', async () => {
+          const service = new {Decorator}CachingDecorator(mockService, 60_000)
+          await service.list(1)
+          await service.list(1)
+          expect(mockService.list).toHaveBeenCalledTimes(1)
+        })
+
+        it('retourne le cache au deuxième appel get()', async () => {
+          const service = new {Decorator}CachingDecorator(mockService, 60_000)
+          await service.get(1)
+          await service.get(1)
+          expect(mockService.get).toHaveBeenCalledTimes(1)
+        })
+
+        it('pages différentes → appels différents', async () => {
+          const service = new {Decorator}CachingDecorator(mockService, 60_000)
+          await service.list(1)
+          await service.list(2)
+          expect(mockService.list).toHaveBeenCalledTimes(2)
+        })
+
+        it('invalidate() vide le cache', async () => {
+          const service = new {Decorator}CachingDecorator(mockService, 60_000)
+          await service.list(1)
+          service.invalidate()
+          await service.list(1)
+          expect(mockService.list).toHaveBeenCalledTimes(2)
+        })
+      })
+
+      describe('{Decorator}RetryDecorator', () => {
+        it('retente en cas d\'erreur', async () => {
+          vi.mocked(mockService.list)
+            .mockRejectedValueOnce(new Error('Network error'))
+            .mockResolvedValueOnce([{ id: 1 }])
+
+          const service = new {Decorator}RetryDecorator(mockService, 3, 0)
+          const result  = await service.list(1)
+          expect(mockService.list).toHaveBeenCalledTimes(2)
+          expect(result).toEqual([{ id: 1 }])
+        })
+
+        it('lève l\'erreur après maxRetries tentatives', async () => {
+          vi.mocked(mockService.list).mockRejectedValue(new Error('Persistent error'))
+          const service = new {Decorator}RetryDecorator(mockService, 3, 0)
+          await expect(service.list(1)).rejects.toThrow('Persistent error')
+          expect(mockService.list).toHaveBeenCalledTimes(3)
+        })
+      })
+  commentaire: 'Décorateur générique pour Nuxt 3 + TypeScript. Placeholders : {decorator} (kebab-case) et {Decorator} (PascalCase).
+    Exemple : decorator=article, Decorator=Article.'
+  actions:
+  - id: 1
+    file: 'utils/decorators/{decorator}/interfaces.ts'
+    type: type
+    description: Interface commune du service
+  - id: 2
+    file: 'utils/decorators/{decorator}/{Decorator}BaseDecorator.ts'
+    type: util
+    description: Décorateur abstrait de base
+  - id: 3
+    file: 'utils/decorators/{decorator}/{Decorator}Decorators.ts'
+    type: util
+    description: 'Décorateurs concrets : logging, cache, retry'
+  - id: 4
+    file: 'composables/{decorator}/use{Decorator}Service.ts'
+    type: composable
+    description: Composable assemblant le service avec décorateurs
+  - id: 5
+    file: 'tests/utils/decorators/{decorator}/{Decorator}Decorators.spec.ts'
+    type: test
+    testedFileId: 3
+    description: Tests logging, cache, retry

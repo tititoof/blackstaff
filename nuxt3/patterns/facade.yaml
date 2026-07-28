@@ -1,0 +1,166 @@
+# Pattern Blackstaff — facade
+# Éditer librement les templates (bloc | multi-lignes)
+# Après édition : python3 yaml-to-json.py ./nuxt3/patterns/
+---
+pattern:
+  name: Façade (Facade) — Nuxt 3
+  description: 'Fournit une interface simplifiée à un ensemble complexe de composables. Les pages n''interagissent qu''avec
+    la façade, jamais avec les sous-systèmes directement.'
+  whenToUse:
+    mustMatch:
+    - 'Simplifier l''accès à plusieurs composables depuis une page'
+    - 'Fournir une interface unifiée pour les opérations d''un domaine complexe'
+    - Orchestrer plusieurs composables avec notifications et navigation
+    - 'Créer un point d''entrée unique pour toutes les opérations d''un domaine'
+    shouldMatch:
+    - Utiliser Nuxt 3 avec TypeScript
+    - Retourner des types simples (boolean, résultat unifié) depuis la façade
+    - Éviter que les pages gèrent la complexité des sous-systèmes
+    mustNotMatch:
+    - Ajouter de la logique métier dans la façade (elle orchestre, ne décide pas)
+    - Un seul composable suffit (pas besoin de façade)
+    - 'Modifier le comportement d''un objet (utiliser Decorator)'
+    examples:
+    - prompt: Créer une façade pour toutes les opérations sur les articles
+      match: true
+      reason: Orchestration de plusieurs composables (CRUD, formulaire, notification).
+    - prompt: 'Créer une façade pour l''authentification complète'
+      match: true
+      reason: Unifie login, logout, store et notifications.
+    - prompt: Créer un composable pour lister les articles
+      match: false
+      reason: Un seul composable suffit — pas besoin de façade.
+  files:
+  - id: 1
+    file: 'composables/{facade}/use{Facade}Facade.ts'
+    type: composable
+    description: 'Façade orchestrant les sous-systèmes du domaine {Facade}.'
+    template: |-
+      // composables/{facade}/use{Facade}Facade.ts
+      // Facade — interface unifiée pour toutes les opérations sur {Facade}
+      // Les pages utilisent UNIQUEMENT ce composable — jamais les sous-systèmes directement
+
+      export interface {Facade}OperationResult {
+        success: boolean
+        data?:   unknown
+        error?:  string
+      }
+
+      export const use{Facade}Facade = () => {
+        // Sous-systèmes internes — la façade les orchestre
+        const { success, error: notifyError } = useNotification()
+        // Ajoute ici les autres composables nécessaires
+        // const { list, get, create, update, remove } = use{Facade}s()
+        // const { form, reset, isValid }              = use{Facade}Form()
+
+        // Opération complexe — création avec notification et navigation
+        const create{Facade} = async (payload: unknown): Promise<{Facade}OperationResult> => {
+          try {
+            // Ajoute ici l'appel au composable de création
+            // const result = await create(payload)
+            // reset()
+            success('{Facade} créé avec succès')
+            await navigateTo('/{facade}s')
+            return { success: true }
+          } catch {
+            notifyError('Impossible de créer le/la {Facade}')
+            return { success: false, error: 'Création échouée' }
+          }
+        }
+
+        // Opération complexe — mise à jour avec notification
+        const update{Facade} = async (id: number, payload: unknown): Promise<{Facade}OperationResult> => {
+          try {
+            // Ajoute ici l'appel au composable de mise à jour
+            // const result = await update(id, payload)
+            success('{Facade} mis à jour avec succès')
+            return { success: true }
+          } catch {
+            notifyError('Impossible de mettre à jour le/la {Facade}')
+            return { success: false, error: 'Mise à jour échouée' }
+          }
+        }
+
+        // Opération complexe — suppression avec notification
+        const delete{Facade} = async (id: number): Promise<{Facade}OperationResult> => {
+          try {
+            // Ajoute ici l'appel au composable de suppression
+            // await remove(id)
+            success('{Facade} supprimé avec succès')
+            return { success: true }
+          } catch {
+            notifyError('Impossible de supprimer le/la {Facade}')
+            return { success: false, error: 'Suppression échouée' }
+          }
+        }
+
+        return {
+          // Ajoute ici les opérations de lecture (délèguent directement)
+          // list,
+          // get,
+          // Opérations d'écriture — orchestration via la façade
+          create{Facade},
+          update{Facade},
+          delete{Facade},
+          // Expose le formulaire pour les pages
+          // form,
+          // isValid
+        }
+      }
+  - id: 2
+    file: 'tests/composables/{facade}/use{Facade}Facade.spec.ts'
+    type: test
+    testedFileId: 1
+    description: 'Tests de la façade {Facade} — orchestration et résultats unifiés.'
+    template: |-
+      // tests/composables/{facade}/use{Facade}Facade.spec.ts
+      import { describe, it, expect, vi, beforeEach } from 'vitest'
+      import { use{Facade}Facade } from '~/composables/{facade}/use{Facade}Facade'
+
+      // Mocks des sous-systèmes
+      vi.mock('~/composables/useNotification', () => ({
+        useNotification: () => ({
+          success:      vi.fn(),
+          error:        vi.fn()
+        })
+      }))
+
+      // Ajoute ici les mocks des autres composables
+      // vi.mock('~/composables/{facade}/use{Facade}s', () => ({ ... }))
+
+      describe('use{Facade}Facade', () => {
+        beforeEach(() => vi.clearAllMocks())
+
+        it('create{Facade}() retourne success: true après création', async () => {
+          const { create{Facade} } = use{Facade}Facade()
+          // Ajoute ici le mock du composable de création
+          const result = await create{Facade}({})
+          expect(result.success).toBe(true)
+        })
+
+        it('create{Facade}() retourne success: false en cas d\'erreur', async () => {
+          const { create{Facade} } = use{Facade}Facade()
+          // Ajoute ici le mock d'une erreur
+          const result = await create{Facade}({})
+          // expect(result.success).toBe(false)
+          // expect(result.error).toBeDefined()
+        })
+
+        it('delete{Facade}() retourne success: true après suppression', async () => {
+          const { delete{Facade} } = use{Facade}Facade()
+          const result = await delete{Facade}(1)
+          expect(result.success).toBeDefined()
+        })
+      })
+  commentaire: 'Façade générique pour Nuxt 3. Placeholders : {facade} (kebab-case) et {Facade} (PascalCase). Exemple : facade=article,
+    Facade=Article.'
+  actions:
+  - id: 1
+    file: 'composables/{facade}/use{Facade}Facade.ts'
+    type: composable
+    description: Façade orchestrant les sous-systèmes
+  - id: 2
+    file: 'tests/composables/{facade}/use{Facade}Facade.spec.ts'
+    type: test
+    testedFileId: 1
+    description: Tests de la façade

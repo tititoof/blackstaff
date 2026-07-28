@@ -5,12 +5,12 @@
     "whenToUse": {
       "mustMatch": [
         "Créer un CRUD complet pour un modèle de données",
+        "Créer le CRUD pour un modèle",
+        "CRUD pour un modèle avec des champs",
         "Gérer des opérations de création, lecture, mise à jour et suppression",
         "Utiliser Nuxt 3 avec Nitro pour le backend",
-        "Communiquer avec une API Rails en backend",
         "Avoir besoin de formulaires avec validation",
-        "Afficher des listes paginées",
-        "Gérer l'authentification via des cookies httpOnly"
+        "Afficher des listes paginées"
       ],
       "shouldMatch": [
         "Utiliser Vuetify pour les composants UI",
@@ -271,7 +271,7 @@
         "type": "test",
         "testedFileId": 8,
         "description": "Test unitaire du composable use{Domain}s — toutes les opérations CRUD.",
-        "template": "// tests/composables/{domain}/use{Domain}s.spec.ts\nimport { describe, it, expect, vi, beforeEach } from 'vitest'\nimport { use{Domain}s } from '~/composables/{domain}/use{Domain}s'\n\nconst mockApiFetch = vi.fn()\nvi.mock('~/composables/{domain}/useApi', () => ({\n  useApi: () => ({ apiFetch: mockApiFetch })\n}))\n\ndescribe('use{Domain}s', () => {\n  beforeEach(() => vi.clearAllMocks())\n\n  it('list() appelle GET /{domain}s avec la page', async () => {\n    const paginated = {\n      {domain}s: [],\n      meta: { total: 0, page: 1, per_page: 10, total_pages: 0 }\n    }\n    mockApiFetch.mockResolvedValue(paginated)\n\n    const { list } = use{Domain}s()\n    const result   = await list(2)\n\n    expect(mockApiFetch).toHaveBeenCalledWith('/{domain}s', { query: { page: 2 } })\n    expect(result).toEqual(paginated)\n  })\n\n  it('get() appelle GET /{domain}s/:id', async () => {\n    const item = { id: 1, created_at: '2024-01-01', updated_at: '2024-01-01' }\n    mockApiFetch.mockResolvedValue(item)\n\n    const { get } = use{Domain}s()\n    await get(1)\n\n    expect(mockApiFetch).toHaveBeenCalledWith('/{domain}s/1')\n  })\n\n  it('create() appelle POST /{domain}s', async () => {\n    const payload = { /* Ajoute ici les champs */ }\n    mockApiFetch.mockResolvedValue({ id: 1, ...payload })\n\n    const { create } = use{Domain}s()\n    await create(payload as any)\n\n    expect(mockApiFetch).toHaveBeenCalledWith(\n      '/{domain}s',\n      { method: 'POST', body: payload }\n    )\n  })\n\n  it('remove() appelle DELETE /{domain}s/:id', async () => {\n    mockApiFetch.mockResolvedValue(undefined)\n\n    const { remove } = use{Domain}s()\n    await remove(42)\n\n    expect(mockApiFetch).toHaveBeenCalledWith('/{domain}s/42', { method: 'DELETE' })\n  })\n})"
+        "template": "// tests/composables/{domain}/use{Domain}s.spec.ts\nimport { describe, it, expect, vi, beforeEach } from 'vitest'\nimport { use{Domain}s } from '~/composables/{domain}/use{Domain}s'\n\nconst mockApiFetch = vi.fn()\nvi.mock('~/composables/useApi', () => ({\n  useApi: () => ({ apiFetch: mockApiFetch })\n}))\n\ndescribe('use{Domain}s', () => {\n  beforeEach(() => vi.clearAllMocks())\n\n  it('list() appelle GET /{domain}s avec la page', async () => {\n    const paginated = {\n      {domain}s: [],\n      meta: { total: 0, page: 1, per_page: 10, total_pages: 0 }\n    }\n    mockApiFetch.mockResolvedValue(paginated)\n\n    const { list } = use{Domain}s()\n    const result   = await list(2)\n\n    expect(mockApiFetch).toHaveBeenCalledWith('/{domain}s', { query: { page: 2 } })\n    expect(result).toEqual(paginated)\n  })\n\n  it('get() appelle GET /{domain}s/:id', async () => {\n    const item = { id: 1, created_at: '2024-01-01', updated_at: '2024-01-01' }\n    mockApiFetch.mockResolvedValue(item)\n\n    const { get } = use{Domain}s()\n    await get(1)\n\n    expect(mockApiFetch).toHaveBeenCalledWith('/{domain}s/1')\n  })\n\n  it('create() appelle POST /{domain}s', async () => {\n    const payload = { /* Ajoute ici les champs */ }\n    mockApiFetch.mockResolvedValue({ id: 1, ...payload })\n\n    const { create } = use{Domain}s()\n    await create(payload as any)\n\n    expect(mockApiFetch).toHaveBeenCalledWith(\n      '/{domain}s',\n      { method: 'POST', body: payload }\n    )\n  })\n\n  it('remove() appelle DELETE /{domain}s/:id', async () => {\n    mockApiFetch.mockResolvedValue(undefined)\n\n    const { remove } = use{Domain}s()\n    await remove(42)\n\n    expect(mockApiFetch).toHaveBeenCalledWith('/{domain}s/42', { method: 'DELETE' })\n  })\n})"
       },
       {
         "id": 106,

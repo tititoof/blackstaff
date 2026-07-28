@@ -1,0 +1,45 @@
+{
+  "pattern": {
+    "name": "Patron de méthode (Template Method) — Nuxt 3",
+    "description": "Définit le squelette d'un algorithme dans la classe mère et laisse les sous-classes redéfinir certaines étapes. Idéal pour les imports/exports multi-formats ou les workflows avec étapes communes.",
+    "whenToUse": {
+      "mustMatch": [
+        "Algorithme multi-étapes avec variations entre sous-classes",
+        "Éviter la duplication de code entre classes similaires",
+        "Définir un workflow commun avec des étapes personnalisables"
+      ],
+      "shouldMatch": ["Utiliser Nuxt 3 avec TypeScript", "La structure de l'algorithme ne change jamais, seules les étapes varient"],
+      "mustNotMatch": ["Algorithmes entièrement différents (utiliser Strategy)", "Une seule variante sans sous-classe"]
+    },
+    "files": [
+      {
+        "id": 1,
+        "file": "utils/templates/{template}/{Template}Template.ts",
+        "type": "util",
+        "description": "Template Method pour {Template} — squelette d'algorithme avec étapes abstraites.",
+        "template": "// utils/templates/{template}/{Template}Template.ts\n// Template Method — squelette d'algorithme pour {Template}\n\nexport abstract class {Template}Template {\n  // ── Template method — FINAL, ne pas surcharger ─────────────────\n  // Le squelette de l'algorithme est défini ici, ne change jamais\n  async execute(input: unknown): Promise<unknown[]> {\n    this.validate(input)\n    const parsed    = await this.parse(input)\n    const processed = this.process(parsed)\n    this.onComplete(processed.length)\n    return processed\n  }\n\n  // ── Étapes ABSTRAITES — doivent être implémentées ──────────────\n  protected abstract validate(input: unknown): void\n  protected abstract parse(input: unknown): Promise<unknown>\n  protected abstract process(data: unknown): unknown[]\n\n  // ── Étapes OPTIONNELLES — peuvent être surchargées ─────────────\n  protected onComplete(count: number): void {\n    console.log(`[{Template}] Traitement terminé : ${count} éléments`)\n  }\n}\n\n// Implémentation concrète A (ex: CSV)\nexport class {Template}TemplateA extends {Template}Template {\n  protected validate(input: unknown): void {\n    // Ajoute ici la validation spécifique au format A\n    // Exemple : if (!String(input).endsWith('.csv')) throw new Error(...)\n  }\n\n  protected async parse(input: unknown): Promise<unknown> {\n    // Ajoute ici le parsing spécifique au format A\n    return input\n  }\n\n  protected process(data: unknown): unknown[] {\n    // Ajoute ici le traitement des données parsées\n    return [data]\n  }\n}\n\n// Implémentation concrète B (ex: JSON)\nexport class {Template}TemplateB extends {Template}Template {\n  protected validate(input: unknown): void {\n    // Validation spécifique au format B\n  }\n\n  protected async parse(input: unknown): Promise<unknown> {\n    // Parsing spécifique au format B\n    return input\n  }\n\n  protected process(data: unknown): unknown[] {\n    return Array.isArray(data) ? data : [data]\n  }\n\n  // Surcharge optionnelle\n  protected onComplete(count: number): void {\n    console.log(`[{Template}B] ${count} éléments importés avec succès`)\n  }\n}\n\n// Factory — instancie la bonne implémentation\nexport type {Template}Format = 'formatA' | 'formatB'\n\nexport const create{Template}Template = (format: {Template}Format): {Template}Template => {\n  const templates: Record<{Template}Format, new () => {Template}Template> = {\n    formatA: {Template}TemplateA,\n    formatB: {Template}TemplateB\n  }\n  return new templates[format]()\n}"
+      },
+      {
+        "id": 2,
+        "file": "composables/{template}/use{Template}.ts",
+        "type": "composable",
+        "description": "Composable utilisant le Template Method pour {Template}.",
+        "template": "// composables/{template}/use{Template}.ts\nimport { create{Template}Template, type {Template}Format } from '~/utils/templates/{template}/{Template}Template'\n\nexport const use{Template} = () => {\n  const execute = async (input: unknown, format: {Template}Format): Promise<unknown[]> => {\n    // La factory choisit la bonne implémentation — le squelette reste le même\n    const template = create{Template}Template(format)\n    return template.execute(input)\n  }\n\n  const executeFormatA = (input: unknown) => execute(input, 'formatA')\n  const executeFormatB = (input: unknown) => execute(input, 'formatB')\n\n  return { execute, executeFormatA, executeFormatB }\n}"
+      },
+      {
+        "id": 3,
+        "file": "tests/utils/templates/{template}/{Template}Template.spec.ts",
+        "type": "test",
+        "testedFileId": 1,
+        "description": "Tests du Template Method {Template} — squelette partagé et étapes spécifiques.",
+        "template": "// tests/utils/templates/{template}/{Template}Template.spec.ts\nimport { describe, it, expect, vi } from 'vitest'\nimport {\n  {Template}TemplateA,\n  {Template}TemplateB,\n  create{Template}Template\n} from '~/utils/templates/{template}/{Template}Template'\n\ndescribe('{Template}Template', () => {\n\n  describe('{Template}TemplateA', () => {\n    it('execute() appelle validate, parse, process dans l\\'ordre', async () => {\n      const t       = new {Template}TemplateA()\n      const validate = vi.spyOn(t as any, 'validate')\n      const parse    = vi.spyOn(t as any, 'parse')\n      const process  = vi.spyOn(t as any, 'process')\n      await t.execute('input')\n      expect(validate).toHaveBeenCalled()\n      expect(parse).toHaveBeenCalled()\n      expect(process).toHaveBeenCalled()\n    })\n\n    it('execute() retourne un tableau', async () => {\n      const t      = new {Template}TemplateA()\n      const result = await t.execute('input')\n      expect(Array.isArray(result)).toBe(true)\n    })\n  })\n\n  describe('{Template}TemplateB', () => {\n    it('execute() retourne un tableau', async () => {\n      const t      = new {Template}TemplateB()\n      const result = await t.execute(['item1', 'item2'])\n      expect(Array.isArray(result)).toBe(true)\n    })\n  })\n\n  describe('create{Template}Template()', () => {\n    it('retourne une instance {Template}TemplateA pour formatA', () => {\n      expect(create{Template}Template('formatA')).toBeInstanceOf({Template}TemplateA)\n    })\n\n    it('retourne une instance {Template}TemplateB pour formatB', () => {\n      expect(create{Template}Template('formatB')).toBeInstanceOf({Template}TemplateB)\n    })\n\n    it('les deux formats utilisent le même squelette (execute)', () => {\n      const a = create{Template}Template('formatA')\n      const b = create{Template}Template('formatB')\n      expect(typeof a.execute).toBe('function')\n      expect(typeof b.execute).toBe('function')\n    })\n  })\n\n})"
+      }
+    ],
+    "commentaire": "Patron de méthode générique pour Nuxt 3. Placeholders : {template} (kebab-case) et {Template} (PascalCase).",
+    "actions": [
+      { "id": 1, "file": "utils/templates/{template}/{Template}Template.ts",               "type": "util",       "description": "Template Method avec étapes abstraites et optionnelles" },
+      { "id": 2, "file": "composables/{template}/use{Template}.ts",                        "type": "composable", "description": "Composable utilisant le Template Method" },
+      { "id": 3, "file": "tests/utils/templates/{template}/{Template}Template.spec.ts",    "type": "test", "testedFileId": 1, "description": "Tests squelette partagé et étapes" }
+    ]
+  }
+}

@@ -1,0 +1,58 @@
+{
+  "pattern": {
+    "name": "Prototype — Nuxt 3",
+    "description": "Crée de nouveaux objets en clonant des prototypes existants. Idéal pour dupliquer des articles, créer des templates de payloads, ou cloner un état de formulaire.",
+    "whenToUse": {
+      "mustMatch": [
+        "Cloner un formulaire avec des valeurs pré-remplies",
+        "Dupliquer un objet existant avec des variantes mineures",
+        "Créer des templates réutilisables à partir d'un modèle de base",
+        "Cloner un état pour comparaison avant/après modification"
+      ],
+      "shouldMatch": [
+        "Utiliser Nuxt 3 avec TypeScript",
+        "Avoir des prototypes pré-définis comme constantes immuables",
+        "Utiliser cloneWith() pour les variantes sans modifier le prototype"
+      ],
+      "mustNotMatch": [
+        "Créer un objet from scratch (pas besoin de prototype)",
+        "Partager l'état entre instances (Prototype crée des copies indépendantes)"
+      ],
+      "examples": [
+        { "prompt": "Dupliquer un article existant avec 'Copie de...'", "match": true, "reason": "Clone avec override du titre." },
+        { "prompt": "Créer des templates d'articles pré-remplis", "match": true, "reason": "Prototypes immuables clonables." },
+        { "prompt": "Créer un article from scratch", "match": false, "reason": "Pas de prototype source — utiliser directement le formulaire." }
+      ]
+    },
+    "files": [
+      {
+        "id": 1,
+        "file": "utils/prototype/{prototype}/{Prototype}Template.ts",
+        "type": "util",
+        "description": "Classe Prototype clonable pour {Prototype} avec templates pré-définis.",
+        "template": "// utils/prototype/{prototype}/{Prototype}Template.ts\n// Prototype — template clonable pour {Prototype}\n\n// Interface Cloneable — tout prototype l'implémente\nexport interface Cloneable<T> {\n  clone(): T\n}\n\nexport class {Prototype}Template implements Cloneable<{Prototype}Template> {\n  constructor(\n    // Ajoute ici les champs du template\n    // Exemple : public title: string = '', public content: string = ''\n  ) {}\n\n  // Clone superficiel — copie indépendante\n  clone(): {Prototype}Template {\n    return new {Prototype}Template(\n      // Ajoute ici les champs à copier\n    )\n  }\n\n  // Clone avec surcharges partielles — jamais de mutation du prototype original\n  cloneWith(overrides: Partial<Record<string, unknown>>): {Prototype}Template {\n    const cloned = this.clone()\n    Object.assign(cloned, overrides)\n    return cloned\n  }\n\n  // Convertit en payload pour l'API\n  toPayload(): Record<string, unknown> {\n    return {\n      // Ajoute ici les champs du payload\n    }\n  }\n}\n\n// Templates pré-définis — prototypes immuables (`as const`)\n// Toujours cloner avant utilisation — jamais modifier directement\nexport const {PROTOTYPE}_TEMPLATES = {\n  default: new {Prototype}Template(\n    // Ajoute ici les valeurs du template par défaut\n  ),\n  // Ajoute ici d'autres templates prédéfinis\n} as const"
+      },
+      {
+        "id": 2,
+        "file": "composables/{prototype}/use{Prototype}Duplicate.ts",
+        "type": "composable",
+        "description": "Composable utilisant le Prototype pour dupliquer un {Prototype} existant.",
+        "template": "// composables/{prototype}/use{Prototype}Duplicate.ts\nimport { {Prototype}Template, {PROTOTYPE}_TEMPLATES } from '~/utils/prototype/{prototype}/{Prototype}Template'\n\nexport const use{Prototype}Duplicate = () => {\n  // Crée un prototype depuis un objet existant\n  const fromExisting = (item: Record<string, unknown>): {Prototype}Template => {\n    return new {Prototype}Template(\n      // Ajoute ici le mapping depuis l'objet existant\n      // Exemple : `Copie de ${item.title}`, item.content\n    )\n  }\n\n  // Duplique via le prototype — crée et envoie à l'API\n  const duplicate = async (item: Record<string, unknown>) => {\n    const template = fromExisting(item)\n    // Ajoute ici l'appel à l'API\n    // const { create } = use{Prototype}s()\n    // return await create(template.toPayload())\n    return template.toPayload()\n  }\n\n  // Initialise depuis un template pré-défini\n  const fromTemplate = (key: keyof typeof {PROTOTYPE}_TEMPLATES) => {\n    // Toujours cloner — jamais modifier le prototype original\n    return {PROTOTYPE}_TEMPLATES[key].clone()\n  }\n\n  return { fromExisting, duplicate, fromTemplate }\n}"
+      },
+      {
+        "id": 3,
+        "file": "tests/utils/prototype/{prototype}/{Prototype}Template.spec.ts",
+        "type": "test",
+        "testedFileId": 1,
+        "description": "Tests du Prototype {Prototype} — clone indépendant, cloneWith, templates.",
+        "template": "// tests/utils/prototype/{prototype}/{Prototype}Template.spec.ts\nimport { describe, it, expect } from 'vitest'\nimport { {Prototype}Template, {PROTOTYPE}_TEMPLATES } from '~/utils/prototype/{prototype}/{Prototype}Template'\n\ndescribe('{Prototype}Template', () => {\n\n  describe('clone()', () => {\n    it('retourne une instance indépendante', () => {\n      const original = new {Prototype}Template()\n      const cloned   = original.clone()\n      expect(cloned).not.toBe(original)\n    })\n\n    it('la copie a les mêmes valeurs que l\\'original', () => {\n      const original = new {Prototype}Template()\n      const cloned   = original.clone()\n      expect(cloned.toPayload()).toEqual(original.toPayload())\n    })\n\n    it('modifier la copie ne modifie pas l\\'original', () => {\n      const original = new {Prototype}Template()\n      const cloned   = original.clone()\n      // Ajoute ici une modification sur cloned\n      // cloned.someField = 'modified'\n      // expect(original.someField).not.toBe('modified')\n      expect(cloned).not.toBe(original)\n    })\n  })\n\n  describe('cloneWith()', () => {\n    it('applique les overrides sans modifier l\\'original', () => {\n      const original = new {Prototype}Template()\n      const variant  = original.cloneWith({ /* overrides */ })\n      expect(variant).not.toBe(original)\n    })\n  })\n\n  describe('{PROTOTYPE}_TEMPLATES', () => {\n    it('les templates pré-définis sont définis', () => {\n      expect({PROTOTYPE}_TEMPLATES.default).toBeDefined()\n    })\n\n    it('cloner un template retourne une copie indépendante', () => {\n      const clone = {PROTOTYPE}_TEMPLATES.default.clone()\n      expect(clone).not.toBe({PROTOTYPE}_TEMPLATES.default)\n    })\n  })\n\n  describe('toPayload()', () => {\n    it('retourne un objet sérialisable', () => {\n      const payload = new {Prototype}Template().toPayload()\n      expect(typeof payload).toBe('object')\n      expect(() => JSON.stringify(payload)).not.toThrow()\n    })\n  })\n\n})"
+      }
+    ],
+    "commentaire": "Prototype générique pour Nuxt 3. Placeholders : {prototype} (kebab-case), {Prototype} (PascalCase), {PROTOTYPE} (SCREAMING_SNAKE_CASE). Exemple : prototype=article, Prototype=Article, PROTOTYPE=ARTICLE.",
+    "actions": [
+      { "id": 1, "file": "utils/prototype/{prototype}/{Prototype}Template.ts",               "type": "util",       "description": "Classe Prototype clonable et templates pré-définis" },
+      { "id": 2, "file": "composables/{prototype}/use{Prototype}Duplicate.ts",               "type": "composable", "description": "Composable de duplication via Prototype" },
+      { "id": 3, "file": "tests/utils/prototype/{prototype}/{Prototype}Template.spec.ts",    "type": "test", "testedFileId": 1, "description": "Tests clone, cloneWith et templates" }
+    ]
+  }
+}

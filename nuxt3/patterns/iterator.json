@@ -1,0 +1,45 @@
+{
+  "pattern": {
+    "name": "Itérateur (Iterator) — Nuxt 3",
+    "description": "Parcourt les éléments d'une collection sans révéler sa représentation interne. Idéal pour les collections paginées, les arbres de catégories ou les listes virtualisées.",
+    "whenToUse": {
+      "mustMatch": [
+        "Parcourir des collections paginées transparemment",
+        "Itérer sur des structures complexes sans exposer leur implémentation",
+        "Implémenter des boucles asynchrones sur des données distantes"
+      ],
+      "shouldMatch": ["Utiliser Nuxt 3 avec TypeScript", "Avoir des collections avec pagination serveur"],
+      "mustNotMatch": ["Collection en mémoire simple (utiliser Array.forEach)", "Un seul élément à traiter"]
+    },
+    "files": [
+      {
+        "id": 1,
+        "file": "utils/iterators/{iterator}/{Iterator}Iterator.ts",
+        "type": "util",
+        "description": "Itérateur pour {Iterator} — parcours transparent avec chargement de pages.",
+        "template": "// utils/iterators/{iterator}/{Iterator}Iterator.ts\n// Iterator — parcours de {Iterator} sans révéler la structure interne\n\nexport interface {Iterator}Collection {\n  data: unknown[]\n  meta: {\n    current_page:  number\n    total_pages:   number\n    total_items:   number\n  }\n}\n\nexport class {Iterator}Iterator<T> {\n  private currentIndex = 0\n  private currentPage  = 1\n  private buffer: T[]  = this.collection.data as T[]\n\n  constructor(\n    private collection: {Iterator}Collection,\n    private fetchNextPage: (page: number) => Promise<{Iterator}Collection>\n  ) {}\n\n  async next(): Promise<T | null> {\n    if (this.currentIndex >= this.buffer.length) {\n      if (this.currentPage >= this.collection.meta.total_pages) return null\n      this.currentPage++\n      const nextPage   = await this.fetchNextPage(this.currentPage)\n      this.buffer      = nextPage.data as T[]\n      this.currentIndex = 0\n    }\n    return this.buffer[this.currentIndex++]\n  }\n\n  async hasNext(): Promise<boolean> {\n    if (this.currentIndex < this.buffer.length) return true\n    return this.currentPage < this.collection.meta.total_pages\n  }\n\n  async forEach(callback: (item: T) => void | Promise<void>): Promise<void> {\n    let item = await this.next()\n    while (item !== null) {\n      await callback(item)\n      item = await this.next()\n    }\n  }\n\n  // Collecte tous les éléments (attention à la mémoire sur grandes collections)\n  async toArray(): Promise<T[]> {\n    const results: T[] = []\n    await this.forEach(item => results.push(item))\n    return results\n  }\n}"
+      },
+      {
+        "id": 2,
+        "file": "composables/{iterator}/use{Iterator}Iterator.ts",
+        "type": "composable",
+        "description": "Composable créant un itérateur pour {Iterator} paginé.",
+        "template": "// composables/{iterator}/use{Iterator}Iterator.ts\nimport { {Iterator}Iterator } from '~/utils/iterators/{iterator}/{Iterator}Iterator'\n\nexport const use{Iterator}Iterator = () => {\n  const { apiFetch } = useApi()\n\n  const fetchPage = async (page: number) => {\n    return apiFetch<any>(`/{iterator}s`, { query: { page, per_page: 10 } })\n  }\n\n  const createIterator = async () => {\n    const firstPage = await fetchPage(1)\n    return new {Iterator}Iterator(firstPage, fetchPage)\n  }\n\n  const iterate = async (callback: (item: unknown) => void | Promise<void>) => {\n    const iterator = await createIterator()\n    await iterator.forEach(callback)\n  }\n\n  return { createIterator, iterate }\n}"
+      },
+      {
+        "id": 3,
+        "file": "tests/utils/iterators/{iterator}/{Iterator}Iterator.spec.ts",
+        "type": "test",
+        "testedFileId": 1,
+        "description": "Tests de l'itérateur {Iterator} — next(), hasNext(), forEach().",
+        "template": "// tests/utils/iterators/{iterator}/{Iterator}Iterator.spec.ts\nimport { describe, it, expect, vi } from 'vitest'\nimport { {Iterator}Iterator } from '~/utils/iterators/{iterator}/{Iterator}Iterator'\n\nconst makePage = (items: number[], page: number, totalPages: number) => ({\n  data: items,\n  meta: { current_page: page, total_pages: totalPages, total_items: items.length * totalPages }\n})\n\ndescribe('{Iterator}Iterator', () => {\n\n  it('next() parcourt les éléments de la première page', async () => {\n    const fetch  = vi.fn()\n    const iter   = new {Iterator}Iterator(makePage([1, 2, 3], 1, 1), fetch)\n    expect(await iter.next()).toBe(1)\n    expect(await iter.next()).toBe(2)\n    expect(await iter.next()).toBe(3)\n    expect(await iter.next()).toBeNull()\n  })\n\n  it('next() charge la page suivante automatiquement', async () => {\n    const fetch  = vi.fn().mockResolvedValue(makePage([4, 5], 2, 2))\n    const iter   = new {Iterator}Iterator(makePage([1, 2, 3], 1, 2), fetch)\n    for (let i = 0; i < 3; i++) await iter.next()  // épuise la page 1\n    expect(await iter.next()).toBe(4)               // charge page 2\n    expect(fetch).toHaveBeenCalledWith(2)\n  })\n\n  it('hasNext() retourne false en fin de collection', async () => {\n    const iter = new {Iterator}Iterator(makePage([1], 1, 1), vi.fn())\n    await iter.next()\n    expect(await iter.hasNext()).toBe(false)\n  })\n\n  it('forEach() parcourt tous les éléments', async () => {\n    const fetch    = vi.fn().mockResolvedValue(makePage([4, 5], 2, 2))\n    const iter     = new {Iterator}Iterator(makePage([1, 2, 3], 1, 2), fetch)\n    const collected: number[] = []\n    await iter.forEach(item => collected.push(item as number))\n    expect(collected).toEqual([1, 2, 3, 4, 5])\n  })\n\n  it('toArray() retourne tous les éléments', async () => {\n    const iter   = new {Iterator}Iterator(makePage([1, 2, 3], 1, 1), vi.fn())\n    const result = await iter.toArray()\n    expect(result).toEqual([1, 2, 3])\n  })\n\n})"
+      }
+    ],
+    "commentaire": "Itérateur générique pour Nuxt 3. Placeholders : {iterator} (kebab-case) et {Iterator} (PascalCase).",
+    "actions": [
+      { "id": 1, "file": "utils/iterators/{iterator}/{Iterator}Iterator.ts",               "type": "util",       "description": "Itérateur avec chargement de pages" },
+      { "id": 2, "file": "composables/{iterator}/use{Iterator}Iterator.ts",                "type": "composable", "description": "Composable créant l'itérateur" },
+      { "id": 3, "file": "tests/utils/iterators/{iterator}/{Iterator}Iterator.spec.ts",    "type": "test", "testedFileId": 1, "description": "Tests next(), hasNext(), forEach()" }
+    ]
+  }
+}

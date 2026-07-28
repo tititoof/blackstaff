@@ -1,0 +1,1274 @@
+# Pattern Blackstaff — auth
+# Éditer librement les templates (bloc | multi-lignes)
+# Après édition : python3 yaml-to-json.py ./nuxt3/patterns/
+---
+pattern:
+  name: Auth Nuxt 3 + Rails JWT httpOnly
+  description: 'Génère le système d''authentification complet (login, logout, register, session) avec JWT stocké dans un cookie
+    httpOnly via Nitro. Une seule génération par projet.'
+  whenToUse:
+    mustMatch:
+    - 'Créer le système d''authentification'
+    - Implémenter le login et logout
+    - 'Gérer l''inscription des utilisateurs'
+    - Mettre en place la gestion de session
+    - Stocker un token JWT en cookie httpOnly
+    shouldMatch:
+    - Utiliser Nuxt 3 avec Nitro comme proxy
+    - 'Communiquer avec une API Rails pour l''auth'
+    - Utiliser Pinia pour le store utilisateur
+    - Protéger des routes avec un middleware
+    mustNotMatch:
+    - Créer un CRUD pour un modèle de données
+    - Utiliser OAuth ou un provider externe (ce pattern est pour JWT custom)
+    - Utiliser une autre technologie que Rails pour le backend
+    examples:
+    - prompt: 'Créer le système de login et register pour l''application'
+      match: true
+      reason: 'Correspond parfaitement : auth complète avec login/register.'
+    - prompt: Créer le CRUD pour les articles
+      match: false
+      reason: 'Ne correspond pas : c''est un CRUD, pas de l''authentification.'
+    - prompt: Ajouter la page de connexion
+      match: true
+      reason: 'Correspond : mise en place du login.'
+    decisionTree:
+      question1: 'Est-ce que la demande concerne l''authentification, le login, le logout ou l''inscription ?'
+      ifYes: ✅ Utiliser ce pattern
+      ifNo: ❌ Ne pas utiliser ce pattern
+  files:
+  - id: 1
+    file: server/api/auth/login.post.ts
+    type: server
+    description: Route Nitro POST /api/auth/login — appelle Rails, pose le cookie httpOnly.
+    template: |-
+      // server/api/auth/login.post.ts
+      import type { LoginPayload, AuthResponse } from '~/types/Auth'
+
+      export default defineEventHandler(async (event) => {
+        const config = useRuntimeConfig()
+        const body   = await readBody<LoginPayload>(event)
+
+        if (!body?.email || !body?.password) {
+          throw createError({ statusCode: 400, message: 'Email et mot de passe requis' })
+        }
+
+        const data = await $fetch<AuthResponse>(`${config.railsApiBase}/auth/login`, {
+          method: 'POST',
+          body
+        })
+
+        // Le token ne touche JAMAIS le JS client — cookie httpOnly uniquement
+        setCookie(event, 'auth_token', data.token, {
+          httpOnly: true,
+          secure:   process.env.NODE_ENV === 'production',
+          sameSite: 'lax',
+          maxAge:   60 * 60 * 24 * 7  // 7 jours
+        })
+
+        // On renvoie l'utilisateur mais JAMAIS le token
+        return { user: data.user }
+      })
+  - id: 2
+    file: server/api/auth/register.post.ts
+    type: server
+    description: Route Nitro POST /api/auth/register — crée un compte et pose le cookie.
+    template: |-
+      // server/api/auth/register.post.ts
+      import type { RegisterPayload, AuthResponse } from '~/types/Auth'
+
+      export default defineEventHandler(async (event) => {
+        const config = useRuntimeConfig()
+        const body   = await readBody<RegisterPayload>(event)
+
+        if (!body?.email || !body?.password) {
+          throw createError({ statusCode: 400, message: 'Email et mot de passe requis' })
+        }
+
+        const data = await $fetch<AuthResponse>(`${config.railsApiBase}/auth/register`, {
+          method: 'POST',
+          body
+        })
+
+        setCookie(event, 'auth_token', data.token, {
+          httpOnly: true,
+          secure:   process.env.NODE_ENV === 'production',
+          sameSite: 'lax',
+          maxAge:   60 * 60 * 24 * 7
+        })
+
+        return { user: data.user }
+      })
+  - id: 3
+    file: server/api/auth/logout.post.ts
+    type: server
+    description: Route Nitro POST /api/auth/logout — invalide le cookie.
+    template: |-
+      // server/api/auth/logout.post.ts
+      export default defineEventHandler(async (event) => {
+        const config = useRuntimeConfig()
+        const token  = getCookie(event, 'auth_token')
+
+        // Notifier Rails si le token existe (invalidation côté serveur)
+        if (token) {
+          try {
+            await $fetch(`${config.railsApiBase}/auth/logout`, {
+              method: 'POST',
+              headers: { Authorization: `Bearer ${token}` }
+            })
+          } catch { /* on supprime le cookie même si Rails échoue */ }
+        }
+
+        deleteCookie(event, 'auth_token')
+        return { success: true }
+      })
+  - id: 4
+    file: server/api/auth/me.get.ts
+    type: server
+    description: 'Route Nitro GET /api/auth/me — retourne l''utilisateur courant depuis Rails.'
+    template: |-
+      // server/api/auth/me.get.ts
+      import type { User } from '~/types/Auth'
+
+      export default defineEventHandler(async (event) => {
+        const config = useRuntimeConfig()
+        const token  = getCookie(event, 'auth_token')
+
+        if (!token) {
+          throw createError({ statusCode: 401, message: 'Non authentifié' })
+        }
+
+        return await $fetch<User>(`${config.railsApiBase}/auth/me`, {
+          headers: { Authorization: `Bearer ${token}` }
+        })
+      })
+  - id: 5
+    file: types/Auth.ts
+    type: type
+    description: 'Interfaces TypeScript pour l''authentification.'
+    template: |-
+      // types/Auth.ts
+
+      export interface User {
+        id: number
+        email: string
+        name?: string
+        // Ajoute ici les champs spécifiques à ton modèle User Rails
+      }
+
+      export interface LoginPayload {
+        email:    string
+        password: string
+      }
+
+      export interface RegisterPayload {
+        email:            string
+        password:         string
+        password_confirmation: string
+        name?:            string
+        // Ajoute ici les champs spécifiques à ton inscription
+      }
+
+      export interface AuthResponse {
+        token: string
+        user:  User
+      }
+  - id: 6
+    file: stores/useAuthStore.ts
+    type: store
+    description: 'Store Pinia pour l''authentification — user courant, état de session.'
+    template: |-
+      // stores/useAuthStore.ts
+      import type { User } from '~/types/Auth'
+
+      export const useAuthStore = defineStore('auth', {
+        state: () => ({
+          user: null as User | null
+        }),
+
+        getters: {
+          isAuthenticated: (state): boolean => !!state.user,
+          userId: (state): number | null => state.user?.id ?? null
+        },
+
+        actions: {
+          setUser(user: User) {
+            this.user = user
+          },
+          logout() {
+            this.user = null
+          }
+        }
+      })
+  - id: 7
+    file: composables/useAuth.ts
+    type: composable_global
+    description: Composable central pour login, logout, register et hydratation de session.
+    template: |-
+      // composables/useAuth.ts
+      import type { LoginPayload, RegisterPayload } from '~/types/Auth'
+
+      export const useAuth = () => {
+        const store = useAuthStore()
+
+        const login = async (payload: LoginPayload) => {
+          const { user } = await $fetch('/api/auth/login', {
+            method: 'POST',
+            body: payload,
+            credentials: 'include'
+          })
+          store.setUser(user)
+          return user
+        }
+
+        const register = async (payload: RegisterPayload) => {
+          const { user } = await $fetch('/api/auth/register', {
+            method: 'POST',
+            body: payload,
+            credentials: 'include'
+          })
+          store.setUser(user)
+          return user
+        }
+
+        const logout = async () => {
+          await $fetch('/api/auth/logout', { method: 'POST', credentials: 'include' })
+          store.logout()
+          await navigateTo('/login')
+        }
+
+        // Hydrate le store depuis Rails au chargement (SSR safe)
+        const fetchMe = async () => {
+          try {
+            const user = await $fetch('/api/auth/me', { credentials: 'include' })
+            store.setUser(user)
+          } catch {
+            store.logout()
+          }
+        }
+
+        return { login, register, logout, fetchMe }
+      }
+  - id: 8
+    file: middleware/auth.ts
+    type: middleware
+    description: Middleware route pour protéger les pages authentifiées.
+    template: |-
+      // middleware/auth.ts
+      export default defineNuxtRouteMiddleware(() => {
+        const authStore = useAuthStore()
+        if (!authStore.isAuthenticated) {
+          return navigateTo('/login')
+        }
+      })
+  - id: 9
+    file: middleware/guest.ts
+    type: middleware
+    description: Middleware route pour rediriger les utilisateurs déjà connectés (login/register).
+    template: |-
+      // middleware/guest.ts
+      export default defineNuxtRouteMiddleware(() => {
+        const authStore = useAuthStore()
+        if (authStore.isAuthenticated) {
+          return navigateTo('/')
+        }
+      })
+  - id: 10
+    file: plugins/auth.ts
+    type: plugin
+    description: 'Plugin Nuxt — hydrate le store auth au démarrage de l''app (client-side).'
+    template: |-
+      // plugins/auth.ts
+      export default defineNuxtPlugin(async () => {
+        const { fetchMe } = useAuth()
+        // Hydrate uniquement côté client pour éviter les problèmes SSR avec les cookies
+        if (import.meta.client) {
+          await fetchMe()
+        }
+      })
+  - id: 11
+    file: pages/login.vue
+    type: page
+    description: Page de connexion.
+    template: |-
+      <!-- pages/login.vue -->
+      <script setup lang="ts">
+      definePageMeta({ middleware: 'guest' })
+
+      const { login } = useAuth()
+      const { error: notifyError } = useNotification()
+
+      const form = reactive({
+        email:    '',
+        password: ''
+      })
+
+      const loading = ref(false)
+
+      const rules = {
+        email: [
+          (v: unknown) => !!v || 'Email requis',
+          (v: unknown) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(v)) || 'Email invalide'
+        ],
+        password: [
+          (v: unknown) => !!v || 'Mot de passe requis',
+          (v: unknown) => String(v).length >= 6 || 'Minimum 6 caractères'
+        ]
+      }
+
+      const onSubmit = async () => {
+        loading.value = true
+        try {
+          await login(form)
+          await navigateTo('/')
+        } catch (e: any) {
+          notifyError(e.data?.message || 'Identifiants incorrects')
+        } finally {
+          loading.value = false
+        }
+      }
+      </script>
+
+      <template>
+        <v-container max-width="480" class="mt-16">
+          <v-card elevation="4" class="pa-6">
+            <v-card-title class="text-h5 mb-4">Connexion</v-card-title>
+            <v-form @submit.prevent="onSubmit">
+              <v-text-field
+                v-model="form.email"
+                label="Email"
+                type="email"
+                :rules="rules.email"
+                class="mb-2"
+              />
+              <v-text-field
+                v-model="form.password"
+                label="Mot de passe"
+                type="password"
+                :rules="rules.password"
+                class="mb-4"
+              />
+              <v-btn type="submit" color="primary" :loading="loading" block>
+                Se connecter
+              </v-btn>
+              <div class="text-center mt-4">
+                <NuxtLink to="/register">Pas encore de compte ?</NuxtLink>
+              </div>
+            </v-form>
+          </v-card>
+        </v-container>
+      </template>
+  - id: 12
+    file: pages/register.vue
+    type: page
+    description: 'Page d''inscription.'
+    template: |-
+      <!-- pages/register.vue -->
+      <script setup lang="ts">
+      definePageMeta({ middleware: 'guest' })
+
+      const { register } = useAuth()
+      const { error: notifyError } = useNotification()
+
+      const form = reactive({
+        name:                  '',
+        email:                 '',
+        password:              '',
+        password_confirmation: ''
+      })
+
+      const loading = ref(false)
+
+      const rules = {
+        name: [
+          (v: unknown) => !!v || 'Nom requis'
+        ],
+        email: [
+          (v: unknown) => !!v || 'Email requis',
+          (v: unknown) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(v)) || 'Email invalide'
+        ],
+        password: [
+          (v: unknown) => !!v || 'Mot de passe requis',
+          (v: unknown) => String(v).length >= 8 || 'Minimum 8 caractères'
+        ],
+        password_confirmation: [
+          (v: unknown) => !!v || 'Confirmation requise',
+          (v: unknown) => v === form.password || 'Les mots de passe ne correspondent pas'
+        ]
+      }
+
+      const onSubmit = async () => {
+        loading.value = true
+        try {
+          await register(form)
+          await navigateTo('/')
+        } catch (e: any) {
+          notifyError(e.data?.message || 'Erreur lors de l\'inscription')
+        } finally {
+          loading.value = false
+        }
+      }
+      </script>
+
+      <template>
+        <v-container max-width="480" class="mt-16">
+          <v-card elevation="4" class="pa-6">
+            <v-card-title class="text-h5 mb-4">Créer un compte</v-card-title>
+            <v-form @submit.prevent="onSubmit">
+              <v-text-field v-model="form.name"  label="Nom"   :rules="rules.name"  class="mb-2" />
+              <v-text-field v-model="form.email" label="Email" :rules="rules.email" type="email" class="mb-2" />
+              <v-text-field v-model="form.password" label="Mot de passe" type="password" :rules="rules.password" class="mb-2" />
+              <v-text-field
+                v-model="form.password_confirmation"
+                label="Confirmer le mot de passe"
+                type="password"
+                :rules="rules.password_confirmation"
+                class="mb-4"
+              />
+              <v-btn type="submit" color="primary" :loading="loading" block>
+                S'inscrire
+              </v-btn>
+              <div class="text-center mt-4">
+                <NuxtLink to="/login">Déjà un compte ?</NuxtLink>
+              </div>
+            </v-form>
+          </v-card>
+        </v-container>
+      </template>
+  - id: 13
+    file: composables/useNotification.ts
+    type: composable_global
+    description: Composable global pour afficher des toasts — partagé avec le pattern CRUD.
+    template: |-
+      // composables/useNotification.ts
+      type NotificationType = 'success' | 'error' | 'warning' | 'info'
+
+      const state = reactive({
+        show:    false,
+        message: '',
+        type:    'success' as NotificationType,
+        timeout: 3000
+      })
+
+      export const useNotification = () => {
+        const notify = (message: string, type: NotificationType = 'success', timeout = 3000) => {
+          state.message = message
+          state.type    = type
+          state.timeout = timeout
+          state.show    = true
+        }
+
+        const success = (message: string) => notify(message, 'success')
+        const error   = (message: string) => notify(message, 'error')
+        const warning = (message: string) => notify(message, 'warning')
+
+        return { state, notify, success, error, warning }
+      }
+  - id: 14
+    file: components/ui/AppSnackbar.vue
+    type: component_global
+    description: Snackbar global branché sur useNotification — partagé avec le pattern CRUD.
+    template: |-
+      <!-- components/ui/AppSnackbar.vue -->
+      <script setup lang="ts">
+      const { state } = useNotification()
+      </script>
+
+      <template>
+        <v-snackbar
+          v-model="state.show"
+          :color="state.type"
+          :timeout="state.timeout"
+          location="bottom right"
+        >
+          {{ state.message }}
+          <template #actions>
+            <v-btn variant="text" @click="state.show = false">Fermer</v-btn>
+          </template>
+        </v-snackbar>
+      </template>
+  - id: 101
+    file: tests/server/api/auth/login.spec.ts
+    type: test
+    testedFileId: 1
+    description: Test unitaire POST /api/auth/login — validation, cookie, réponse sans token.
+    template: |-
+      // tests/server/api/auth/login.spec.ts
+      import { describe, it, expect, vi, beforeEach } from 'vitest'
+      import { mockNuxtImport } from '@nuxt/test-utils/runtime'
+
+      const mockFetch = vi.fn()
+      vi.mock('ofetch', () => ({ $fetch: mockFetch }))
+
+      const mockSetCookie = vi.fn()
+      const mockReadBody  = vi.fn()
+      mockNuxtImport('setCookie',        () => mockSetCookie)
+      mockNuxtImport('readBody',         () => mockReadBody)
+      mockNuxtImport('useRuntimeConfig', () => vi.fn(() => ({ railsApiBase: 'http://rails.test' })))
+
+      describe('POST /api/auth/login', () => {
+        beforeEach(() => vi.clearAllMocks())
+
+        it('retourne 400 si email ou password manquant', async () => {
+          mockReadBody.mockResolvedValue({ email: '', password: '' })
+          const handler = (await import('~/server/api/auth/login.post')).default
+          await expect(handler({} as any)).rejects.toMatchObject({ statusCode: 400 })
+        })
+
+        it('pose le cookie httpOnly et retourne user sans token', async () => {
+          mockReadBody.mockResolvedValue({ email: 'test@test.com', password: 'password123' })
+          mockFetch.mockResolvedValue({
+            token: 'secret-jwt',
+            user:  { id: 1, email: 'test@test.com', name: 'Test' }
+          })
+
+          const handler = (await import('~/server/api/auth/login.post')).default
+          const result  = await handler({} as any)
+
+          // Le token doit être dans le cookie, jamais dans la réponse
+          expect(mockSetCookie).toHaveBeenCalledWith(
+            expect.anything(),
+            'auth_token',
+            'secret-jwt',
+            expect.objectContaining({ httpOnly: true })
+          )
+          expect(result).toEqual({ user: { id: 1, email: 'test@test.com', name: 'Test' } })
+          expect(JSON.stringify(result)).not.toContain('secret-jwt')
+        })
+      })
+  - id: 102
+    file: tests/server/api/auth/register.spec.ts
+    type: test
+    testedFileId: 2
+    description: Test unitaire POST /api/auth/register.
+    template: |-
+      // tests/server/api/auth/register.spec.ts
+      import { describe, it, expect, vi, beforeEach } from 'vitest'
+      import { mockNuxtImport } from '@nuxt/test-utils/runtime'
+
+      const mockFetch     = vi.fn()
+      const mockSetCookie = vi.fn()
+      const mockReadBody  = vi.fn()
+
+      vi.mock('ofetch', () => ({ $fetch: mockFetch }))
+      mockNuxtImport('setCookie',        () => mockSetCookie)
+      mockNuxtImport('readBody',         () => mockReadBody)
+      mockNuxtImport('useRuntimeConfig', () => vi.fn(() => ({ railsApiBase: 'http://rails.test' })))
+
+      describe('POST /api/auth/register', () => {
+        beforeEach(() => vi.clearAllMocks())
+
+        it('retourne 400 si champs manquants', async () => {
+          mockReadBody.mockResolvedValue({ email: 'test@test.com' }) // password manquant
+          const handler = (await import('~/server/api/auth/register.post')).default
+          await expect(handler({} as any)).rejects.toMatchObject({ statusCode: 400 })
+        })
+
+        it('crée le compte, pose le cookie et retourne user', async () => {
+          mockReadBody.mockResolvedValue({
+            email: 'new@test.com',
+            password: 'password123',
+            password_confirmation: 'password123',
+            name: 'New User'
+          })
+          mockFetch.mockResolvedValue({
+            token: 'new-jwt',
+            user:  { id: 2, email: 'new@test.com', name: 'New User' }
+          })
+
+          const handler = (await import('~/server/api/auth/register.post')).default
+          const result  = await handler({} as any)
+
+          expect(mockSetCookie).toHaveBeenCalledWith(
+            expect.anything(), 'auth_token', 'new-jwt',
+            expect.objectContaining({ httpOnly: true })
+          )
+          expect(result.user.email).toBe('new@test.com')
+          expect(JSON.stringify(result)).not.toContain('new-jwt')
+        })
+      })
+  - id: 103
+    file: tests/server/api/auth/logout.spec.ts
+    type: test
+    testedFileId: 3
+    description: Test unitaire POST /api/auth/logout — suppression cookie.
+    template: |-
+      // tests/server/api/auth/logout.spec.ts
+      import { describe, it, expect, vi, beforeEach } from 'vitest'
+      import { mockNuxtImport } from '@nuxt/test-utils/runtime'
+
+      const mockFetch       = vi.fn()
+      const mockDeleteCookie = vi.fn()
+      const mockGetCookie   = vi.fn()
+
+      vi.mock('ofetch', () => ({ $fetch: mockFetch }))
+      mockNuxtImport('deleteCookie',     () => mockDeleteCookie)
+      mockNuxtImport('getCookie',        () => mockGetCookie)
+      mockNuxtImport('useRuntimeConfig', () => vi.fn(() => ({ railsApiBase: 'http://rails.test' })))
+
+      describe('POST /api/auth/logout', () => {
+        beforeEach(() => vi.clearAllMocks())
+
+        it('supprime le cookie et retourne { success: true }', async () => {
+          mockGetCookie.mockReturnValue('token-123')
+          mockFetch.mockResolvedValue(undefined)
+
+          const handler = (await import('~/server/api/auth/logout.post')).default
+          const result  = await handler({} as any)
+
+          expect(mockDeleteCookie).toHaveBeenCalledWith(expect.anything(), 'auth_token')
+          expect(result).toEqual({ success: true })
+        })
+
+        it('supprime le cookie même si Rails échoue', async () => {
+          mockGetCookie.mockReturnValue('token-123')
+          mockFetch.mockRejectedValue(new Error('Rails down'))
+
+          const handler = (await import('~/server/api/auth/logout.post')).default
+          const result  = await handler({} as any)
+
+          expect(mockDeleteCookie).toHaveBeenCalled()
+          expect(result).toEqual({ success: true })
+        })
+
+        it('supprime le cookie même sans token', async () => {
+          mockGetCookie.mockReturnValue(undefined)
+
+          const handler = (await import('~/server/api/auth/logout.post')).default
+          const result  = await handler({} as any)
+
+          expect(mockFetch).not.toHaveBeenCalled()
+          expect(mockDeleteCookie).toHaveBeenCalled()
+          expect(result).toEqual({ success: true })
+        })
+      })
+  - id: 104
+    file: tests/server/api/auth/me.spec.ts
+    type: test
+    testedFileId: 4
+    description: Test unitaire GET /api/auth/me — session courante.
+    template: |-
+      // tests/server/api/auth/me.spec.ts
+      import { describe, it, expect, vi, beforeEach } from 'vitest'
+      import { mockNuxtImport } from '@nuxt/test-utils/runtime'
+
+      const mockFetch     = vi.fn()
+      const mockGetCookie = vi.fn()
+
+      vi.mock('ofetch', () => ({ $fetch: mockFetch }))
+      mockNuxtImport('getCookie',        () => mockGetCookie)
+      mockNuxtImport('useRuntimeConfig', () => vi.fn(() => ({ railsApiBase: 'http://rails.test' })))
+
+      describe('GET /api/auth/me', () => {
+        beforeEach(() => vi.clearAllMocks())
+
+        it('retourne 401 si pas de cookie', async () => {
+          mockGetCookie.mockReturnValue(undefined)
+          const handler = (await import('~/server/api/auth/me.get')).default
+          await expect(handler({} as any)).rejects.toMatchObject({ statusCode: 401 })
+        })
+
+        it('retourne l\'utilisateur courant depuis Rails', async () => {
+          mockGetCookie.mockReturnValue('valid-token')
+          mockFetch.mockResolvedValue({ id: 1, email: 'me@test.com', name: 'Me' })
+
+          const handler = (await import('~/server/api/auth/me.get')).default
+          const result  = await handler({} as any)
+
+          expect(mockFetch).toHaveBeenCalledWith(
+            'http://rails.test/auth/me',
+            expect.objectContaining({ headers: { Authorization: 'Bearer valid-token' } })
+          )
+          expect(result.email).toBe('me@test.com')
+        })
+      })
+  - id: 105
+    file: tests/composables/useAuth.spec.ts
+    type: test
+    testedFileId: 7
+    description: Test du composable useAuth — login, logout, register, fetchMe.
+    template: |-
+      // tests/composables/useAuth.spec.ts
+      import { describe, it, expect, vi, beforeEach } from 'vitest'
+      import { setActivePinia, createPinia } from 'pinia'
+      import { mockNuxtImport } from '@nuxt/test-utils/runtime'
+
+      const mockFetch      = vi.fn()
+      const mockNavigateTo = vi.fn()
+
+      vi.mock('ofetch', () => ({ $fetch: mockFetch }))
+      mockNuxtImport('navigateTo', () => mockNavigateTo)
+
+      describe('useAuth', () => {
+        beforeEach(() => {
+          setActivePinia(createPinia())
+          vi.clearAllMocks()
+        })
+
+        it('login() appelle /api/auth/login et met à jour le store', async () => {
+          const user = { id: 1, email: 'test@test.com', name: 'Test' }
+          mockFetch.mockResolvedValue({ user })
+
+          const { useAuth }     = await import('~/composables/useAuth')
+          const { useAuthStore } = await import('~/stores/useAuthStore')
+          const { login } = useAuth()
+          const store     = useAuthStore()
+
+          await login({ email: 'test@test.com', password: 'password' })
+
+          expect(mockFetch).toHaveBeenCalledWith('/api/auth/login', expect.objectContaining({ method: 'POST' }))
+          expect(store.user).toEqual(user)
+          expect(store.isAuthenticated).toBe(true)
+        })
+
+        it('logout() vide le store et redirige vers /login', async () => {
+          mockFetch.mockResolvedValue(undefined)
+
+          const { useAuth }     = await import('~/composables/useAuth')
+          const { useAuthStore } = await import('~/stores/useAuthStore')
+          const { logout } = useAuth()
+          const store      = useAuthStore()
+          store.setUser({ id: 1, email: 'test@test.com' })
+
+          await logout()
+
+          expect(store.user).toBeNull()
+          expect(mockNavigateTo).toHaveBeenCalledWith('/login')
+        })
+
+        it('fetchMe() hydrate le store si token valide', async () => {
+          const user = { id: 1, email: 'me@test.com' }
+          mockFetch.mockResolvedValue(user)
+
+          const { useAuth }     = await import('~/composables/useAuth')
+          const { useAuthStore } = await import('~/stores/useAuthStore')
+          const { fetchMe } = useAuth()
+          const store       = useAuthStore()
+
+          await fetchMe()
+
+          expect(store.user).toEqual(user)
+        })
+
+        it('fetchMe() vide le store si token invalide', async () => {
+          mockFetch.mockRejectedValue(new Error('401'))
+
+          const { useAuth }     = await import('~/composables/useAuth')
+          const { useAuthStore } = await import('~/stores/useAuthStore')
+          const { fetchMe } = useAuth()
+          const store       = useAuthStore()
+          store.setUser({ id: 1, email: 'test@test.com' })
+
+          await fetchMe()
+
+          expect(store.user).toBeNull()
+        })
+      })
+  - id: 106
+    file: tests/stores/useAuthStore.spec.ts
+    type: test
+    testedFileId: 6
+    description: Test du store Pinia auth — state, getters, actions.
+    template: |-
+      // tests/stores/useAuthStore.spec.ts
+      import { describe, it, expect, beforeEach } from 'vitest'
+      import { setActivePinia, createPinia } from 'pinia'
+      import { useAuthStore } from '~/stores/useAuthStore'
+
+      describe('useAuthStore', () => {
+        beforeEach(() => setActivePinia(createPinia()))
+
+        it('état initial correct', () => {
+          const store = useAuthStore()
+          expect(store.user).toBeNull()
+          expect(store.isAuthenticated).toBe(false)
+          expect(store.userId).toBeNull()
+        })
+
+        it('setUser() met à jour user et isAuthenticated', () => {
+          const store = useAuthStore()
+          store.setUser({ id: 1, email: 'test@test.com' })
+          expect(store.user).toEqual({ id: 1, email: 'test@test.com' })
+          expect(store.isAuthenticated).toBe(true)
+          expect(store.userId).toBe(1)
+        })
+
+        it('logout() remet user à null', () => {
+          const store = useAuthStore()
+          store.setUser({ id: 1, email: 'test@test.com' })
+          store.logout()
+          expect(store.user).toBeNull()
+          expect(store.isAuthenticated).toBe(false)
+        })
+      })
+  - id: 107
+    file: tests/middleware/auth.spec.ts
+    type: test
+    testedFileId: 8
+    description: Test middleware auth — redirection si non authentifié.
+    template: |-
+      // tests/middleware/auth.spec.ts
+      import { describe, it, expect, vi, beforeEach } from 'vitest'
+      import { setActivePinia, createPinia } from 'pinia'
+      import { mockNuxtImport } from '@nuxt/test-utils/runtime'
+
+      const mockNavigateTo = vi.fn()
+      mockNuxtImport('navigateTo', () => mockNavigateTo)
+
+      describe('middleware/auth', () => {
+        beforeEach(() => {
+          setActivePinia(createPinia())
+          vi.clearAllMocks()
+        })
+
+        it('redirige vers /login si non authentifié', async () => {
+          const { useAuthStore } = await import('~/stores/useAuthStore')
+          useAuthStore() // user null par défaut
+
+          const middleware = (await import('~/middleware/auth')).default
+          middleware({} as any, {} as any)
+          expect(mockNavigateTo).toHaveBeenCalledWith('/login')
+        })
+
+        it('ne redirige pas si authentifié', async () => {
+          const { useAuthStore } = await import('~/stores/useAuthStore')
+          const store = useAuthStore()
+          store.setUser({ id: 1, email: 'test@test.com' })
+
+          const middleware = (await import('~/middleware/auth')).default
+          middleware({} as any, {} as any)
+          expect(mockNavigateTo).not.toHaveBeenCalled()
+        })
+      })
+  - id: 108
+    file: tests/middleware/guest.spec.ts
+    type: test
+    testedFileId: 9
+    description: Test middleware guest — redirection si déjà authentifié.
+    template: |-
+      // tests/middleware/guest.spec.ts
+      import { describe, it, expect, vi, beforeEach } from 'vitest'
+      import { setActivePinia, createPinia } from 'pinia'
+      import { mockNuxtImport } from '@nuxt/test-utils/runtime'
+
+      const mockNavigateTo = vi.fn()
+      mockNuxtImport('navigateTo', () => mockNavigateTo)
+
+      describe('middleware/guest', () => {
+        beforeEach(() => {
+          setActivePinia(createPinia())
+          vi.clearAllMocks()
+        })
+
+        it('redirige vers / si déjà authentifié', async () => {
+          const { useAuthStore } = await import('~/stores/useAuthStore')
+          const store = useAuthStore()
+          store.setUser({ id: 1, email: 'test@test.com' })
+
+          const middleware = (await import('~/middleware/guest')).default
+          middleware({} as any, {} as any)
+          expect(mockNavigateTo).toHaveBeenCalledWith('/')
+        })
+
+        it('ne redirige pas si non authentifié', async () => {
+          const { useAuthStore } = await import('~/stores/useAuthStore')
+          useAuthStore() // user null
+
+          const middleware = (await import('~/middleware/guest')).default
+          middleware({} as any, {} as any)
+          expect(mockNavigateTo).not.toHaveBeenCalled()
+        })
+      })
+  - id: 201
+    file: playwright.config.ts
+    type: config
+    description: Configuration Playwright — baseURL, session partagée, reporters.
+    template: |-
+      // playwright.config.ts
+      import { defineConfig, devices } from '@playwright/test'
+
+      export default defineConfig({
+        testDir:       './tests/e2e',
+        fullyParallel: false,
+        forbidOnly:    !!process.env.CI,
+        retries:       process.env.CI ? 2 : 0,
+        workers:       process.env.CI ? 1 : undefined,
+
+        reporter: [['html', { outputFolder: 'playwright-report' }], ['list']],
+
+        use: {
+          baseURL:    process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:3000',
+          trace:      'on-first-retry',
+          screenshot: 'only-on-failure',
+          video:      'retain-on-failure',
+          locale:     'fr-FR',
+        },
+
+        projects: [
+          { name: 'setup', testMatch: '**/fixtures/auth.setup.ts' },
+          {
+            name: 'chromium',
+            use: {
+              ...devices['Desktop Chrome'],
+              storageState: 'tests/e2e/.auth/user.json',
+            },
+            dependencies: ['setup'],
+          },
+        ],
+
+        webServer: {
+          command:            'npm run dev',
+          url:                'http://localhost:3000',
+          reuseExistingServer: !process.env.CI,
+          timeout:            120_000,
+        },
+      })
+  - id: 202
+    file: tests/e2e/fixtures/auth.setup.ts
+    type: e2e_fixture
+    description: Setup Playwright — authentifie et sauvegarde la session.
+    template: |-
+      // tests/e2e/fixtures/auth.setup.ts
+      import { test as setup, expect } from '@playwright/test'
+      import { LoginPage } from '../pages/login.page'
+
+      const AUTH_FILE = 'tests/e2e/.auth/user.json'
+
+      setup("authentification de l'utilisateur de test", async ({ page }) => {
+        const loginPage = new LoginPage(page)
+        await loginPage.goto()
+        await loginPage.login(
+          process.env.E2E_USER_EMAIL    || 'test@example.com',
+          process.env.E2E_USER_PASSWORD || 'password123'
+        )
+        await expect(page).not.toHaveURL('/login')
+        await page.context().storageState({ path: AUTH_FILE })
+      })
+  - id: 203
+    file: tests/e2e/fixtures/test-helpers.ts
+    type: e2e_fixture
+    description: Helpers pour créer/nettoyer des données de test via API.
+    template: |-
+      // tests/e2e/fixtures/test-helpers.ts
+      import type { APIRequestContext } from '@playwright/test'
+
+      export async function createViaApi(
+        request: APIRequestContext,
+        endpoint: string,
+        data: Record<string, unknown>
+      ) {
+        const response = await request.post(`/api${endpoint}`, { data })
+        if (!response.ok()) {
+          throw new Error(`API error ${response.status()}: ${await response.text()}`)
+        }
+        return response.json()
+      }
+
+      export async function deleteViaApi(
+        request: APIRequestContext,
+        endpoint: string,
+        id: number
+      ) {
+        await request.delete(`/api${endpoint}/${id}`)
+      }
+
+      export async function loginAs(
+        request: APIRequestContext,
+        email: string,
+        password: string
+      ) {
+        const response = await request.post('/api/auth/login', { data: { email, password } })
+        return response.json()
+      }
+  - id: 204
+    file: tests/e2e/pages/login.page.ts
+    type: e2e_pom
+    description: Page Object Model login.
+    template: |-
+      // tests/e2e/pages/login.page.ts
+      import type { Page, Locator } from '@playwright/test'
+      import { expect } from '@playwright/test'
+
+      export class LoginPage {
+        readonly page:          Page
+        readonly emailInput:    Locator
+        readonly passwordInput: Locator
+        readonly submitButton:  Locator
+        readonly errorToast:    Locator
+
+        constructor(page: Page) {
+          this.page          = page
+          this.emailInput    = page.getByLabel('Email')
+          this.passwordInput = page.getByLabel('Mot de passe')
+          this.submitButton  = page.getByRole('button', { name: 'Se connecter' })
+          this.errorToast    = page.locator('.v-snackbar')
+        }
+
+        async goto() { await this.page.goto('/login') }
+
+        async login(email: string, password: string) {
+          await this.emailInput.fill(email)
+          await this.passwordInput.fill(password)
+          await this.submitButton.click()
+        }
+
+        async expectError(message: string) {
+          await this.errorToast.waitFor({ state: 'visible' })
+          await expect(this.errorToast).toContainText(message)
+        }
+      }
+  - id: 205
+    file: tests/e2e/auth/login.spec.ts
+    type: e2e_test
+    description: Tests e2e login — formulaire, erreurs, redirection.
+    template: |-
+      // tests/e2e/auth/login.spec.ts
+      import { test, expect } from '@playwright/test'
+      import { LoginPage } from '../pages/login.page'
+
+      // Ce fichier ne doit PAS utiliser la session sauvegardée
+      test.use({ storageState: { cookies: [], origins: [] } })
+
+      test.describe('Page Login', () => {
+
+        test('affiche le formulaire de connexion', async ({ page }) => {
+          const p = new LoginPage(page)
+          await p.goto()
+          await expect(p.emailInput).toBeVisible()
+          await expect(p.passwordInput).toBeVisible()
+          await expect(p.submitButton).toBeVisible()
+        })
+
+        test('connecte et redirige vers /', async ({ page }) => {
+          const p = new LoginPage(page)
+          await p.goto()
+          await p.login(
+            process.env.E2E_USER_EMAIL    || 'test@example.com',
+            process.env.E2E_USER_PASSWORD || 'password123'
+          )
+          await expect(page).not.toHaveURL('/login', { timeout: 5000 })
+        })
+
+        test('affiche une erreur avec des identifiants incorrects', async ({ page }) => {
+          const p = new LoginPage(page)
+          await p.goto()
+          await p.login('faux@email.com', 'mauvais')
+          await p.expectError('Identifiants incorrects')
+          await expect(page).toHaveURL('/login')
+        })
+
+        test('valide les champs côté client (champs vides)', async ({ page }) => {
+          const p = new LoginPage(page)
+          await p.goto()
+          await p.submitButton.click()
+          await expect(page.getByText('Email requis')).toBeVisible()
+          await expect(page.getByText('Mot de passe requis')).toBeVisible()
+        })
+
+        test('email invalide affiche une erreur de format', async ({ page }) => {
+          const p = new LoginPage(page)
+          await p.goto()
+          await p.emailInput.fill('pas-un-email')
+          await p.submitButton.click()
+          await expect(page.getByText('Email invalide')).toBeVisible()
+        })
+
+      })
+  - id: 206
+    file: tests/e2e/auth/register.spec.ts
+    type: e2e_test
+    description: Tests e2e register — inscription, validation, confirmation mot de passe.
+    template: |-
+      // tests/e2e/auth/register.spec.ts
+      import { test, expect } from '@playwright/test'
+
+      test.use({ storageState: { cookies: [], origins: [] } })
+
+      test.describe("Page Register", () => {
+
+        test('affiche le formulaire d\'inscription', async ({ page }) => {
+          await page.goto('/register')
+          await expect(page.getByLabel('Email')).toBeVisible()
+          await expect(page.getByLabel('Mot de passe')).toBeVisible()
+          await expect(page.getByLabel('Confirmer le mot de passe')).toBeVisible()
+        })
+
+        test('les mots de passe ne correspondent pas', async ({ page }) => {
+          await page.goto('/register')
+          await page.getByLabel('Email').fill('nouveau@test.com')
+          await page.getByLabel('Mot de passe').fill('password123')
+          await page.getByLabel('Confirmer le mot de passe').fill('different456')
+          await page.getByRole('button', { name: /s\'inscrire/i }).click()
+          await expect(page.getByText('Les mots de passe ne correspondent pas')).toBeVisible()
+        })
+
+        test('lien vers /login visible', async ({ page }) => {
+          await page.goto('/register')
+          await expect(page.getByRole('link', { name: /déjà un compte/i })).toBeVisible()
+        })
+
+      })
+  - id: 207
+    file: tests/e2e/auth/logout.spec.ts
+    type: e2e_test
+    description: Tests e2e logout — déconnexion et protection des routes.
+    template: |-
+      // tests/e2e/auth/logout.spec.ts
+      // Utilise la session authentifiée (storageState chargé depuis playwright.config.ts)
+      import { test, expect } from '@playwright/test'
+
+      test.describe('Logout', () => {
+
+        test('déconnecte et redirige vers /login', async ({ page }) => {
+          await page.goto('/')
+
+          // Adapter le sélecteur selon ton layout (bouton logout dans la navbar)
+          await page.getByRole('button', { name: /déconnexion|logout|quitter/i }).click()
+
+          await expect(page).toHaveURL('/login', { timeout: 5000 })
+        })
+
+        test('les pages protégées sont inaccessibles après logout', async ({ page }) => {
+          await page.goto('/')
+          await page.getByRole('button', { name: /déconnexion|logout|quitter/i }).click()
+          await expect(page).toHaveURL('/login')
+
+          // Tenter d'accéder à une route protégée
+          await page.goto('/articles')
+          await expect(page).toHaveURL('/login')
+        })
+
+        test('la page /login redirige si déjà connecté', async ({ page }) => {
+          // La session est chargée → middleware guest doit rediriger
+          await page.goto('/login')
+          await expect(page).not.toHaveURL('/login', { timeout: 3000 })
+        })
+
+      })
+  commentaire: 'Pattern d''authentification JWT httpOnly pour Nuxt 3 + Rails. Généré une seule fois par projet. Aucun placeholder
+    {domain}/{Domain} — ce pattern est statique.'
+  actions:
+  - id: 1
+    file: server/api/auth/login.post.ts
+    type: server
+    description: Route POST login — pose le cookie httpOnly
+  - id: 2
+    file: server/api/auth/register.post.ts
+    type: server
+    description: Route POST register
+  - id: 3
+    file: server/api/auth/logout.post.ts
+    type: server
+    description: Route POST logout — supprime le cookie
+  - id: 4
+    file: server/api/auth/me.get.ts
+    type: server
+    description: Route GET me — utilisateur courant
+  - id: 5
+    file: types/Auth.ts
+    type: type
+    description: Interfaces User, LoginPayload, RegisterPayload, AuthResponse
+  - id: 6
+    file: stores/useAuthStore.ts
+    type: store
+    description: Store Pinia auth
+  - id: 7
+    file: composables/useAuth.ts
+    type: composable_global
+    description: login, logout, register, fetchMe
+  - id: 8
+    file: middleware/auth.ts
+    type: middleware
+    description: Protection des routes privées
+  - id: 9
+    file: middleware/guest.ts
+    type: middleware
+    description: Redirection si déjà connecté
+  - id: 10
+    file: plugins/auth.ts
+    type: plugin
+    description: Hydratation du store au démarrage
+  - id: 11
+    file: pages/login.vue
+    type: page
+    description: Page de connexion
+  - id: 12
+    file: pages/register.vue
+    type: page
+    description: 'Page d''inscription'
+  - id: 101
+    file: tests/server/api/auth/login.spec.ts
+    type: test
+    testedFileId: 1
+    description: Test unitaire POST /api/auth/login — validation, cookie, réponse sans token.
+  - id: 102
+    file: tests/server/api/auth/register.spec.ts
+    type: test
+    testedFileId: 2
+    description: Test unitaire POST /api/auth/register.
+  - id: 103
+    file: tests/server/api/auth/logout.spec.ts
+    type: test
+    testedFileId: 3
+    description: Test unitaire POST /api/auth/logout — suppression cookie.
+  - id: 104
+    file: tests/server/api/auth/me.spec.ts
+    type: test
+    testedFileId: 4
+    description: Test unitaire GET /api/auth/me — session courante.
+  - id: 105
+    file: tests/composables/useAuth.spec.ts
+    type: test
+    testedFileId: 7
+    description: Test du composable useAuth — login, logout, register, fetchMe.
+  - id: 106
+    file: tests/stores/useAuthStore.spec.ts
+    type: test
+    testedFileId: 6
+    description: Test du store Pinia auth — state, getters, actions.
+  - id: 107
+    file: tests/middleware/auth.spec.ts
+    type: test
+    testedFileId: 8
+    description: Test middleware auth — redirection si non authentifié.
+  - id: 108
+    file: tests/middleware/guest.spec.ts
+    type: test
+    testedFileId: 9
+    description: Test middleware guest — redirection si déjà authentifié.
+  - id: 13
+    file: composables/useNotification.ts
+    type: composable_global
+    description: Toast de notification global
+  - id: 14
+    file: components/ui/AppSnackbar.vue
+    type: component_global
+    description: Snackbar global
+  - id: 201
+    file: playwright.config.ts
+    type: config
+    description: Configuration Playwright — baseURL, session partagée, reporters.
+  - id: 202
+    file: tests/e2e/fixtures/auth.setup.ts
+    type: e2e_fixture
+    description: Setup Playwright — authentifie et sauvegarde la session.
+  - id: 203
+    file: tests/e2e/fixtures/test-helpers.ts
+    type: e2e_fixture
+    description: Helpers pour créer/nettoyer des données de test via API.
+  - id: 204
+    file: tests/e2e/pages/login.page.ts
+    type: e2e_pom
+    description: Page Object Model login.
+  - id: 205
+    file: tests/e2e/auth/login.spec.ts
+    type: e2e_test
+    description: Tests e2e login — formulaire, erreurs, redirection.
+  - id: 206
+    file: tests/e2e/auth/register.spec.ts
+    type: e2e_test
+    description: Tests e2e register — inscription, validation, confirmation mot de passe.
+  - id: 207
+    file: tests/e2e/auth/logout.spec.ts
+    type: e2e_test
+    description: Tests e2e logout — déconnexion et protection des routes.

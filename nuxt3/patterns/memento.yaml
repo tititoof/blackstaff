@@ -1,0 +1,186 @@
+# Pattern Blackstaff — memento
+# Éditer librement les templates (bloc | multi-lignes)
+# Après édition : python3 yaml-to-json.py ./nuxt3/patterns/
+---
+pattern:
+  name: Mémento (Memento) — Nuxt 3
+  description: 'Sauvegarde et restaure l''état précédent d''un objet. Idéal pour undo/redo dans les éditeurs, l''historique
+    des filtres, ou la restauration d''un formulaire.'
+  whenToUse:
+    mustMatch:
+    - Implémenter undo/redo dans un éditeur ou configurateur
+    - 'Sauvegarder l''état d''un formulaire pour restauration'
+    - 'Historique des états d''un composant (filtres, paramètres de recherche)'
+    shouldMatch:
+    - Utiliser Nuxt 3 avec TypeScript
+    - État sérialisable (pas de références circulaires)
+    mustNotMatch:
+    - 'État global de l''application (utiliser Pinia)'
+    - Un seul état sans historique
+  files:
+  - id: 1
+    file: 'utils/mementos/{memento}/{Memento}Memento.ts'
+    type: util
+    description: 'Mémento pour {Memento} — historique undo/redo avec copies indépendantes.'
+    template: |-
+      // utils/mementos/{memento}/{Memento}Memento.ts
+      // Memento — sauvegarde/restauration de l'état {Memento}
+
+      // État sauvegardé — doit être sérialisable
+      export type {Memento}State = Record<string, unknown>
+
+      export class {Memento}Memento {
+        private states:       {Memento}State[] = []
+        private currentIndex = -1
+
+        // Sauvegarde — copie indépendante (jamais de référence)
+        save(state: {Memento}State): void {
+          // Supprimer les états futurs si on revient en arrière avant de sauvegarder
+          this.states = this.states.slice(0, this.currentIndex + 1)
+          this.states.push(structuredClone(state))
+          this.currentIndex++
+        }
+
+        undo(): {Memento}State | null {
+          if (this.currentIndex <= 0) return null
+          this.currentIndex--
+          return structuredClone(this.states[this.currentIndex])
+        }
+
+        redo(): {Memento}State | null {
+          if (this.currentIndex >= this.states.length - 1) return null
+          this.currentIndex++
+          return structuredClone(this.states[this.currentIndex])
+        }
+
+        getCurrent(): {Memento}State | null {
+          if (this.currentIndex === -1) return null
+          return structuredClone(this.states[this.currentIndex])
+        }
+
+        canUndo(): boolean { return this.currentIndex > 0 }
+        canRedo(): boolean { return this.currentIndex < this.states.length - 1 }
+        historyLength(): number { return this.states.length }
+      }
+  - id: 2
+    file: 'composables/{memento}/use{Memento}History.ts'
+    type: composable
+    description: 'Composable exposant l''historique undo/redo pour {Memento}.'
+    template: |-
+      // composables/{memento}/use{Memento}History.ts
+      import { {Memento}Memento } from '~/utils/mementos/{memento}/{Memento}Memento'
+      import type { {Memento}State } from '~/utils/mementos/{memento}/{Memento}Memento'
+
+      export const use{Memento}History = (initialState: {Memento}State = {}) => {
+        const memento = new {Memento}Memento()
+        const state   = reactive<{Memento}State>({ ...initialState })
+
+        // Sauvegarder l'état initial
+        memento.save({ ...state })
+
+        const save = () => {
+          memento.save({ ...state })
+        }
+
+        const undo = () => {
+          const prev = memento.undo()
+          if (prev) Object.assign(state, prev)
+        }
+
+        const redo = () => {
+          const next = memento.redo()
+          if (next) Object.assign(state, next)
+        }
+
+        const canUndo = computed(() => memento.canUndo())
+        const canRedo = computed(() => memento.canRedo())
+
+        return { state, save, undo, redo, canUndo, canRedo }
+      }
+  - id: 3
+    file: 'tests/utils/mementos/{memento}/{Memento}Memento.spec.ts'
+    type: test
+    testedFileId: 1
+    description: 'Tests du Mémento {Memento} — save, undo, redo, copies indépendantes.'
+    template: |-
+      // tests/utils/mementos/{memento}/{Memento}Memento.spec.ts
+      import { describe, it, expect } from 'vitest'
+      import { {Memento}Memento } from '~/utils/mementos/{memento}/{Memento}Memento'
+
+      describe('{Memento}Memento', () => {
+
+        it('save() et getCurrent() fonctionnent', () => {
+          const m = new {Memento}Memento()
+          m.save({ field: 'valeur 1' })
+          expect(m.getCurrent()).toEqual({ field: 'valeur 1' })
+        })
+
+        it('undo() restaure l\'état précédent', () => {
+          const m = new {Memento}Memento()
+          m.save({ field: 'v1' })
+          m.save({ field: 'v2' })
+          const restored = m.undo()
+          expect(restored).toEqual({ field: 'v1' })
+        })
+
+        it('redo() rétablit l\'état annulé', () => {
+          const m = new {Memento}Memento()
+          m.save({ field: 'v1' })
+          m.save({ field: 'v2' })
+          m.undo()
+          const restored = m.redo()
+          expect(restored).toEqual({ field: 'v2' })
+        })
+
+        it('undo() retourne null en début d\'historique', () => {
+          const m = new {Memento}Memento()
+          m.save({ field: 'v1' })
+          expect(m.undo()).toBeNull()
+        })
+
+        it('save() après undo() supprime les états futurs', () => {
+          const m = new {Memento}Memento()
+          m.save({ field: 'v1' })
+          m.save({ field: 'v2' })
+          m.save({ field: 'v3' })
+          m.undo()  // → v2
+          m.save({ field: 'v4' })  // v3 est supprimé
+          expect(m.redo()).toBeNull()
+          expect(m.historyLength()).toBe(3)  // v1, v2, v4
+        })
+
+        it('getCurrent() retourne une copie indépendante', () => {
+          const m     = new {Memento}Memento()
+          const state = { field: 'original' }
+          m.save(state)
+          const copy = m.getCurrent()!
+          copy.field = 'modifié'
+          expect(m.getCurrent()!.field).toBe('original')  // original non muté
+        })
+
+        it('canUndo() et canRedo() sont corrects', () => {
+          const m = new {Memento}Memento()
+          m.save({ v: 1 })
+          expect(m.canUndo()).toBe(false)
+          m.save({ v: 2 })
+          expect(m.canUndo()).toBe(true)
+          m.undo()
+          expect(m.canRedo()).toBe(true)
+        })
+
+      })
+  commentaire: 'Mémento générique pour Nuxt 3. Placeholders : {memento} (kebab-case) et {Memento} (PascalCase).'
+  actions:
+  - id: 1
+    file: 'utils/mementos/{memento}/{Memento}Memento.ts'
+    type: util
+    description: Mémento avec save, undo, redo
+  - id: 2
+    file: 'composables/{memento}/use{Memento}History.ts'
+    type: composable
+    description: Composable avec historique réactif
+  - id: 3
+    file: 'tests/utils/mementos/{memento}/{Memento}Memento.spec.ts'
+    type: test
+    testedFileId: 1
+    description: Tests save, undo, redo, copies indépendantes

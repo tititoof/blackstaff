@@ -1,0 +1,95 @@
+{
+  "pattern": {
+    "name": "Adaptateur (Adapter) — Nuxt 3",
+    "description": "Fait collaborer des objets ayant des interfaces incompatibles. Idéal pour adapter le format Rails (snake_case) au format Nuxt (camelCase), adapter une librairie externe, ou convertir un ancien format d'API.",
+
+    "whenToUse": {
+      "mustMatch": [
+        "Adapter le format de réponse Rails (snake_case) au format Nuxt (camelCase)",
+        "Adapter une librairie externe à l'interface interne du projet",
+        "Adapter un ancien format d'API vers le nouveau sans tout réécrire",
+        "Adapter les données d'un composant tiers au format attendu par les composables",
+        "Isoler la conversion de format dans une seule couche"
+      ],
+      "shouldMatch": [
+        "Utiliser Nuxt 3 avec TypeScript",
+        "Avoir des formats source et cible bien définis",
+        "Vouloir éviter les conversions éparpillées dans les composables"
+      ],
+      "mustNotMatch": [
+        "Transformer des données à la volée sans interface définie",
+        "Modifier le comportement d'un objet (utiliser Decorator à la place)",
+        "Créer des familles d'objets (utiliser Abstract Factory à la place)"
+      ],
+      "examples": [
+        {
+          "prompt": "Adapter les réponses Rails snake_case en camelCase pour Nuxt",
+          "match": true,
+          "reason": "Conversion d'interface entre deux formats incompatibles."
+        },
+        {
+          "prompt": "Adapter la librairie de dates dayjs à une interface interne",
+          "match": true,
+          "reason": "Isole la dépendance externe derrière une interface commune."
+        },
+        {
+          "prompt": "Ajouter du cache sur un appel API",
+          "match": false,
+          "reason": "Comportement transversal — utiliser Decorator à la place."
+        }
+      ],
+      "decisionTree": {
+        "question1": "As-tu deux interfaces incompatibles à faire collaborer ?",
+        "ifYes": {
+          "question2": "Veux-tu isoler la conversion dans une seule couche ?",
+          "ifYes": "✅ Utiliser ce pattern",
+          "ifNo": "⚠️ Utiliser ce pattern mais attention à ne pas éparpiller la logique"
+        },
+        "ifNo": "❌ Ne pas utiliser ce pattern"
+      }
+    },
+
+    "files": [
+      {
+        "id": 1,
+        "file": "utils/adapters/{adapter}/interfaces.ts",
+        "type": "type",
+        "description": "Interfaces source (format externe) et cible (format interne) pour l'adaptateur {Adapter}.",
+        template: |-
+          // utils/adapters/{adapter}/interfaces.ts
+          // Format source (externe — ex: Rails, API tierce)\nexport interface {Adapter}Source {\n  // Ajoute ici les champs du format source\n  // Exemple : created_at: string (snake_case Rails)\n}\n\n// Format cible (interne — format Nuxt)\nexport interface {Adapter}Target {\n  // Ajoute ici les champs du format cible\n  // Exemple : createdAt: string (camelCase Nuxt)\n}\n\n// Format paginé source (si applicable)\nexport interface {Adapter}SourcePaginated {\n  data: {Adapter}Source[]\n  meta: {\n    current_page: number\n    total_count:  number\n    per_page:     number\n    total_pages:  number\n  }\n}\n\n// Format paginé cible\nexport interface {Adapter}TargetPaginated {\n  items: {Adapter}Target[]\n  meta: {\n    page:       number\n    total:      number\n    perPage:    number\n    totalPages: number\n  }\n}\n\n// Interface de l'adaptateur\nexport interface {Adapter}Adapter {\n  adapt(raw: {Adapter}Source): {Adapter}Target\n  adaptList(raw: {Adapter}SourcePaginated): {Adapter}TargetPaginated\n}"
+      },
+      {
+        "id": 2,
+        "file": "utils/adapters/{adapter}/{Adapter}Adapter.ts",
+        "type": "util",
+        "description": "Implémentation de l'adaptateur {Adapter} et singleton exporté.",
+        "template": "// utils/adapters/{adapter}/{Adapter}Adapter.ts\nimport type {\n  {Adapter}Adapter,\n  {Adapter}Source,\n  {Adapter}Target,\n  {Adapter}SourcePaginated,\n  {Adapter}TargetPaginated\n} from './interfaces'\n\n// Implémentation de l'adaptateur\nclass {Adapter}AdapterImpl implements {Adapter}Adapter {\n  adapt(raw: {Adapter}Source): {Adapter}Target {\n    return {\n      // Ajoute ici le mapping champ par champ\n      // Exemple : createdAt: raw.created_at\n    }\n  }\n\n  adaptList(raw: {Adapter}SourcePaginated): {Adapter}TargetPaginated {\n    return {\n      items: raw.data.map(item => this.adapt(item)),\n      meta: {\n        page:       raw.meta.current_page,\n        total:      raw.meta.total_count,\n        perPage:    raw.meta.per_page,\n        totalPages: raw.meta.total_pages\n      }\n    }\n  }\n}\n\n// Singleton — l'adaptateur est stateless, une seule instance suffit\nexport const {adapter}Adapter = new {Adapter}AdapterImpl()"
+      },
+      {
+        "id": 3,
+        "file": "composables/{adapter}/use{Adapter}s.ts",
+        "type": "composable",
+        "description": "Composable utilisant l'adaptateur {Adapter} — le reste du projet ne connaît que le format cible.",
+        "template": "// composables/{adapter}/use{Adapter}s.ts\nimport { {adapter}Adapter } from '~/utils/adapters/{adapter}/{Adapter}Adapter'\nimport type { {Adapter}Target, {Adapter}TargetPaginated, {Adapter}Source, {Adapter}SourcePaginated } from '~/utils/adapters/{adapter}/interfaces'\n\nexport const use{Adapter}s = () => {\n  const { apiFetch } = useApi()\n\n  const list = async (page = 1): Promise<{Adapter}TargetPaginated> => {\n    // Rails retourne le format source\n    const raw = await apiFetch<{Adapter}SourcePaginated>(`/{adapter}s`, { query: { page } })\n    // L'adaptateur convertit en format interne\n    return {adapter}Adapter.adaptList(raw)\n  }\n\n  const get = async (id: number): Promise<{Adapter}Target> => {\n    const raw = await apiFetch<{Adapter}Source>(`/{adapter}s/${id}`)\n    return {adapter}Adapter.adapt(raw)\n  }\n\n  return { list, get }\n}"
+      },
+      {
+        "id": 4,
+        "file": "tests/utils/adapters/{adapter}/{Adapter}Adapter.spec.ts",
+        "type": "test",
+        "testedFileId": 2,
+        "description": "Tests unitaires de l'adaptateur {Adapter} — mapping champ par champ.",
+        "template": "// tests/utils/adapters/{adapter}/{Adapter}Adapter.spec.ts\nimport { describe, it, expect } from 'vitest'\nimport { {adapter}Adapter } from '~/utils/adapters/{adapter}/{Adapter}Adapter'\nimport type { {Adapter}Source, {Adapter}SourcePaginated } from '~/utils/adapters/{adapter}/interfaces'\n\nconst mock{Adapter}Source: {Adapter}Source = {\n  // Ajoute ici un exemple de données source\n}\n\nconst mock{Adapter}SourcePaginated: {Adapter}SourcePaginated = {\n  data: [mock{Adapter}Source],\n  meta: {\n    current_page: 1,\n    total_count:  1,\n    per_page:     10,\n    total_pages:  1\n  }\n}\n\ndescribe('{Adapter}Adapter', () => {\n\n  describe('adapt()', () => {\n    it('convertit le format source en format cible', () => {\n      const result = {adapter}Adapter.adapt(mock{Adapter}Source)\n      expect(result).toBeDefined()\n      // Ajoute ici les assertions de mapping\n      // Exemple : expect(result.createdAt).toBe(mock{Adapter}Source.created_at)\n    })\n\n    it('ne laisse aucun champ snake_case dans le résultat', () => {\n      const result = {adapter}Adapter.adapt(mock{Adapter}Source)\n      const keys   = Object.keys(result)\n      const hasSnakeCase = keys.some(k => k.includes('_'))\n      expect(hasSnakeCase).toBe(false)\n    })\n  })\n\n  describe('adaptList()', () => {\n    it('convertit la liste et la pagination', () => {\n      const result = {adapter}Adapter.adaptList(mock{Adapter}SourcePaginated)\n      expect(result.items).toHaveLength(1)\n      expect(result.meta.page).toBe(1)\n      expect(result.meta.total).toBe(1)\n      expect(result.meta.perPage).toBe(10)\n      expect(result.meta.totalPages).toBe(1)\n    })\n\n    it('applique adapt() sur chaque item de la liste', () => {\n      const result = {adapter}Adapter.adaptList(mock{Adapter}SourcePaginated)\n      result.items.forEach(item => {\n        const keys = Object.keys(item)\n        expect(keys.some(k => k.includes('_'))).toBe(false)\n      })\n    })\n  })\n\n})"
+      }
+    ],
+
+    "commentaire": "Adaptateur générique pour Nuxt 3 + TypeScript. Placeholders : {adapter} (kebab-case) et {Adapter} (PascalCase). Exemple : adapter=rails-article, Adapter=RailsArticle.",
+
+    "actions": [
+      { "id": 1, "file": "utils/adapters/{adapter}/interfaces.ts",               "type": "type",       "description": "Interfaces source, cible et adaptateur" },
+      { "id": 2, "file": "utils/adapters/{adapter}/{Adapter}Adapter.ts",          "type": "util",       "description": "Implémentation et singleton de l'adaptateur" },
+      { "id": 3, "file": "composables/{adapter}/use{Adapter}s.ts",                "type": "composable", "description": "Composable utilisant l'adaptateur" },
+      { "id": 4, "file": "tests/utils/adapters/{adapter}/{Adapter}Adapter.spec.ts","type": "test",       "testedFileId": 2, "description": "Tests unitaires de l'adaptateur" }
+    ]
+  }
+}

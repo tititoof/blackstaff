@@ -1,0 +1,186 @@
+# Pattern Blackstaff — observer
+# Éditer librement les templates (bloc | multi-lignes)
+# Après édition : python3 yaml-to-json.py ./nuxt3/patterns/
+---
+pattern:
+  name: Observateur (Observer) — Nuxt 3
+  description: 'Mécanisme de souscription pour notifier plusieurs objets des changements d''état. Idéal pour les événements
+    globaux, les notifications temps réel ou la synchronisation entre modules.'
+  whenToUse:
+    mustMatch:
+    - 'Notifier plusieurs composants d''un changement d''état sans couplage direct'
+    - 'Implémenter un bus d''événements global'
+    - Réagir à des événements inter-modules (thème, langue, connexion)
+    shouldMatch:
+    - Utiliser Nuxt 3 avec TypeScript
+    - Se désabonner dans onUnmounted pour éviter les fuites mémoire
+    mustNotMatch:
+    - Communication parent-enfant simple (utiliser emits)
+    - 'Pinia suffit pour l''état partagé'
+  files:
+  - id: 1
+    file: 'utils/observers/{observer}/{Observer}EventBus.ts'
+    type: util
+    description: 'Bus d''événements {Observer} — souscription, publication, désabonnement.'
+    template: |-
+      // utils/observers/{observer}/{Observer}EventBus.ts
+      // Observer — bus d'événements typé pour {Observer}
+
+      type {Observer}EventCallback<T = unknown> = (data?: T) => void
+
+      export class {Observer}EventBus {
+        private events: Map<string, Set<{Observer}EventCallback>> = new Map()
+
+        // Souscription — retourne une fonction de désabonnement
+        subscribe<T>(event: string, callback: {Observer}EventCallback<T>): () => void {
+          if (!this.events.has(event)) {
+            this.events.set(event, new Set())
+          }
+          this.events.get(event)!.add(callback as {Observer}EventCallback)
+
+          // Retourner la fonction de désabonnement — toujours appeler dans onUnmounted
+          return () => this.unsubscribe(event, callback as {Observer}EventCallback)
+        }
+
+        // Publication — notifie tous les abonnés
+        publish<T>(event: string, data?: T): void {
+          this.events.get(event)?.forEach(callback => {
+            try {
+              callback(data)
+            } catch (error) {
+              console.error(`[{Observer}EventBus] Erreur dans le callback de "${event}":`, error)
+            }
+          })
+        }
+
+        private unsubscribe(event: string, callback: {Observer}EventCallback): void {
+          this.events.get(event)?.delete(callback)
+          if (this.events.get(event)?.size === 0) {
+            this.events.delete(event)
+          }
+        }
+
+        clear(event?: string): void {
+          if (event) this.events.delete(event)
+          else       this.events.clear()
+        }
+
+        subscriberCount(event: string): number {
+          return this.events.get(event)?.size ?? 0
+        }
+      }
+
+      // Singleton — une seule instance pour toute l'application
+      export const {observer}EventBus = new {Observer}EventBus()
+  - id: 2
+    file: 'composables/{observer}/use{Observer}Events.ts'
+    type: composable
+    description: 'Composable exposant le bus d''événements {Observer} avec désabonnement automatique.'
+    template: |-
+      // composables/{observer}/use{Observer}Events.ts
+      import { {observer}EventBus } from '~/utils/observers/{observer}/{Observer}EventBus'
+
+      export const use{Observer}Events = () => {
+        // Souscription avec désabonnement automatique dans onUnmounted
+        const on = <T>(event: string, callback: (data?: T) => void) => {
+          const unsubscribe = {observer}EventBus.subscribe<T>(event, callback)
+          onUnmounted(unsubscribe)
+          return unsubscribe
+        }
+
+        const emit = <T>(event: string, data?: T) => {
+          {observer}EventBus.publish<T>(event, data)
+        }
+
+        return { on, emit }
+      }
+  - id: 3
+    file: 'tests/utils/observers/{observer}/{Observer}EventBus.spec.ts'
+    type: test
+    testedFileId: 1
+    description: 'Tests du bus d''événements {Observer} — subscribe, publish, unsubscribe.'
+    template: |-
+      // tests/utils/observers/{observer}/{Observer}EventBus.spec.ts
+      import { describe, it, expect, vi } from 'vitest'
+      import { {Observer}EventBus } from '~/utils/observers/{observer}/{Observer}EventBus'
+
+      const makebus = () => new {Observer}EventBus()
+
+      describe('{Observer}EventBus', () => {
+
+        it('subscribe() + publish() notifie le callback', () => {
+          const bus = makebus()
+          const cb  = vi.fn()
+          bus.subscribe('event', cb)
+          bus.publish('event', 'data')
+          expect(cb).toHaveBeenCalledWith('data')
+        })
+
+        it('plusieurs abonnés reçoivent la notification', () => {
+          const bus = makebus()
+          const cb1 = vi.fn(), cb2 = vi.fn()
+          bus.subscribe('event', cb1)
+          bus.subscribe('event', cb2)
+          bus.publish('event', 42)
+          expect(cb1).toHaveBeenCalledWith(42)
+          expect(cb2).toHaveBeenCalledWith(42)
+        })
+
+        it('la fonction de désabonnement retire le callback', () => {
+          const bus         = makebus()
+          const cb          = vi.fn()
+          const unsubscribe = bus.subscribe('event', cb)
+          unsubscribe()
+          bus.publish('event', 'data')
+          expect(cb).not.toHaveBeenCalled()
+        })
+
+        it('publish() sans abonnés ne lève pas d\'erreur', () => {
+          const bus = makebus()
+          expect(() => bus.publish('inexistant', 'data')).not.toThrow()
+        })
+
+        it('clear() supprime tous les abonnés', () => {
+          const bus = makebus()
+          const cb  = vi.fn()
+          bus.subscribe('event', cb)
+          bus.clear()
+          bus.publish('event', 'data')
+          expect(cb).not.toHaveBeenCalled()
+        })
+
+        it('subscriberCount() retourne le bon nombre', () => {
+          const bus = makebus()
+          const u1  = bus.subscribe('e', vi.fn())
+          const u2  = bus.subscribe('e', vi.fn())
+          expect(bus.subscriberCount('e')).toBe(2)
+          u1()
+          expect(bus.subscriberCount('e')).toBe(1)
+        })
+
+        it('une erreur dans un callback n\'empêche pas les autres', () => {
+          const bus = makebus()
+          const cb1 = vi.fn().mockImplementation(() => { throw new Error('oops') })
+          const cb2 = vi.fn()
+          bus.subscribe('e', cb1)
+          bus.subscribe('e', cb2)
+          expect(() => bus.publish('e')).not.toThrow()
+          expect(cb2).toHaveBeenCalled()
+        })
+
+      })
+  commentaire: 'Observateur générique pour Nuxt 3. Placeholders : {observer} (kebab-case) et {Observer} (PascalCase).'
+  actions:
+  - id: 1
+    file: 'utils/observers/{observer}/{Observer}EventBus.ts'
+    type: util
+    description: 'Bus d''événements avec subscribe/publish/unsubscribe'
+  - id: 2
+    file: 'composables/{observer}/use{Observer}Events.ts'
+    type: composable
+    description: Composable avec désabonnement automatique
+  - id: 3
+    file: 'tests/utils/observers/{observer}/{Observer}EventBus.spec.ts'
+    type: test
+    testedFileId: 1
+    description: Tests subscribe, publish, unsubscribe

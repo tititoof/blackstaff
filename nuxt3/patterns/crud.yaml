@@ -1,0 +1,1907 @@
+# Pattern Blackstaff — crud
+# Éditer librement les templates (bloc | multi-lignes)
+# Après édition : python3 yaml-to-json.py ./nuxt3/patterns/
+---
+pattern:
+  name: CRUD Full Stack Nuxt 3 + Rails
+  description: 'Génère un CRUD complet avec frontend (Nuxt 3) et backend (Nitro proxy vers Rails). Tous les fichiers sont
+    organisés par domaine ({domain}) et les placeholders doivent être remplacés.'
+  whenToUse:
+    mustMatch:
+    - Créer un CRUD complet pour un modèle de données
+    - Créer le CRUD pour un modèle
+    - CRUD pour un modèle avec des champs
+    - Gérer des opérations de création, lecture, mise à jour et suppression
+    - Utiliser Nuxt 3 avec Nitro pour le backend
+    - Avoir besoin de formulaires avec validation
+    - Afficher des listes paginées
+    shouldMatch:
+    - Utiliser Vuetify pour les composants UI
+    - Centraliser la logique API dans des composables
+    - Séparer les composants Smart et Dumb
+    - 'Utiliser Pinia pour la gestion d''état'
+    - 'Avoir besoin de middleware d''authentification'
+    mustNotMatch:
+    - Créer une application mobile (ce pattern est pour le web)
+    - Utiliser un autre framework que Nuxt 3
+    - Ne pas avoir besoin de backend (ce pattern inclut des routes API)
+    - Utiliser une autre technologie que Rails pour le backend
+    - Créer une application sans authentification
+    examples:
+    - prompt: 'Créer un système de gestion d''articles avec liste, création, édition et suppression'
+      match: true
+      reason: 'Correspond parfaitement : CRUD complet pour un modèle (Article) avec toutes les opérations.'
+    - prompt: Créer une page de profil utilisateur avec modification des informations
+      match: true
+      reason: 'Correspond : CRUD pour un modèle (User) avec opérations de mise à jour.'
+    - prompt: Créer une API REST avec Express.js
+      match: false
+      reason: 'Ne correspond pas : ce pattern est pour Nuxt 3 + Rails, pas Express.js.'
+    decisionTree:
+      question1: 'Est-ce que la demande concerne la création d''un système de gestion de données avec des opérations CRUD
+        ?'
+      ifYes:
+        question2: Est-ce que le projet utilise Nuxt 3 avec Nitro pour le backend ?
+        ifYes:
+          question3: Est-ce que le backend est une API Rails ?
+          ifYes: ✅ Utiliser ce pattern
+          ifNo: ❌ Ne pas utiliser ce pattern (backend non compatible)
+        ifNo: ❌ Ne pas utiliser ce pattern (technologie non compatible)
+      ifNo: ❌ Ne pas utiliser ce pattern (pas un CRUD)
+  files:
+  - id: 1
+    file: 'server/api/{domain}/index.get.ts'
+    type: server
+    description: 'Route Nitro pour lister les {domain} (GET) avec pagination et recherche.'
+    template: |-
+      // server/api/{domain}/index.get.ts
+      import type { {Domain}Paginated } from '~/types/{Domain}'
+
+      export default defineEventHandler(async (event) => {
+        const config = useRuntimeConfig()
+        const token = getCookie(event, 'auth_token')
+
+        if (!token) {
+          throw createError({ statusCode: 401, message: 'Non authentifié' })
+        }
+
+        const query = getQuery(event)
+
+        return await $fetch<{Domain}Paginated>(`${config.railsApiBase}/{domain}s`, {
+          headers: { Authorization: `Bearer ${token}` },
+          query
+        })
+      })
+  - id: 2
+    file: 'server/api/{domain}/[id].get.ts'
+    type: server
+    description: 'Route Nitro pour récupérer un {domain} par ID (GET).'
+    template: |-
+      // server/api/{domain}/[id].get.ts
+      import type { {Domain} } from '~/types/{Domain}'
+
+      export default defineEventHandler(async (event) => {
+        const config = useRuntimeConfig()
+        const token = getCookie(event, 'auth_token')
+        const id = getRouterParam(event, 'id')
+
+        if (!token) throw createError({ statusCode: 401, message: 'Non authentifié' })
+        if (!id)    throw createError({ statusCode: 400, message: 'ID manquant' })
+
+        return await $fetch<{Domain}>(`${config.railsApiBase}/{domain}s/${id}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        })
+      })
+  - id: 3
+    file: 'server/api/{domain}/index.post.ts'
+    type: server
+    description: 'Route Nitro pour créer un {domain} (POST).'
+    template: |-
+      // server/api/{domain}/index.post.ts
+      import type { Create{Domain}Payload } from '~/types/{Domain}'
+
+      export default defineEventHandler(async (event) => {
+        const config = useRuntimeConfig()
+        const token = getCookie(event, 'auth_token')
+
+        if (!token) throw createError({ statusCode: 401, message: 'Non authentifié' })
+
+        const body = await readBody<Create{Domain}Payload>(event)
+        if (!body) throw createError({ statusCode: 400, message: 'Body manquant' })
+
+        return await $fetch<{Domain}>(`${config.railsApiBase}/{domain}s`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}` },
+          body
+        })
+      })
+  - id: 4
+    file: 'server/api/{domain}/[id].put.ts'
+    type: server
+    description: 'Route Nitro pour mettre à jour un {domain} (PUT).'
+    template: |-
+      // server/api/{domain}/[id].put.ts
+      import type { Update{Domain}Payload } from '~/types/{Domain}'
+
+      export default defineEventHandler(async (event) => {
+        const config = useRuntimeConfig()
+        const token = getCookie(event, 'auth_token')
+        const id = getRouterParam(event, 'id')
+
+        if (!token) throw createError({ statusCode: 401, message: 'Non authentifié' })
+        if (!id)    throw createError({ statusCode: 400, message: 'ID manquant' })
+
+        const body = await readBody<Update{Domain}Payload>(event)
+
+        return await $fetch<{Domain}>(`${config.railsApiBase}/{domain}s/${id}`, {
+          method: 'PUT',
+          headers: { Authorization: `Bearer ${token}` },
+          body
+        })
+      })
+  - id: 5
+    file: 'server/api/{domain}/[id].delete.ts'
+    type: server
+    description: 'Route Nitro pour supprimer un {domain} (DELETE).'
+    template: |-
+      // server/api/{domain}/[id].delete.ts
+      export default defineEventHandler(async (event) => {
+        const config = useRuntimeConfig()
+        const token = getCookie(event, 'auth_token')
+        const id = getRouterParam(event, 'id')
+
+        if (!token) throw createError({ statusCode: 401, message: 'Non authentifié' })
+        if (!id)    throw createError({ statusCode: 400, message: 'ID manquant' })
+
+        await $fetch(`${config.railsApiBase}/{domain}s/${id}`, {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${token}` }
+        })
+
+        return { success: true }
+      })
+  - id: 6
+    file: 'types/{Domain}.ts'
+    type: type
+    description: 'Définition des interfaces TypeScript pour le modèle {Domain}.'
+    template: |-
+      // types/{Domain}.ts
+
+      export interface {Domain} {
+        id: number
+        created_at: string
+        updated_at: string
+        // Ajoute ici les champs spécifiques de ton modèle
+      }
+
+      export interface {Domain}Paginated {
+        {domain}s: {Domain}[]
+        meta: {
+          total: number
+          page: number
+          per_page: number
+          total_pages: number
+        }
+      }
+
+      export interface Create{Domain}Payload {
+        // Ajoute ici les champs obligatoires pour la création
+      }
+
+      export interface Update{Domain}Payload {
+        [K in keyof Create{Domain}Payload]?: Create{Domain}Payload[K]
+      }
+  - id: 7
+    file: composables/useApi.ts
+    type: composable_global
+    description: Composable central global pour les appels API — partagé entre tous les domaines.
+    template: |-
+      // composables/useApi.ts
+      export const useApi = () => {
+        const apiFetch = <T>(
+          endpoint: string,
+          options: Parameters<typeof $fetch>[1] = {}
+        ): Promise<T> => {
+          return $fetch<T>(`/api${endpoint}`, {
+            ...options,
+            credentials: 'include'
+          })
+        }
+        return { apiFetch }
+      }
+  - id: 8
+    file: 'composables/{domain}/use{Domain}s.ts'
+    type: composable
+    description: 'Composable pour les opérations CRUD sur les {domain}.'
+    template: |-
+      // composables/{domain}/use{Domain}s.ts
+      import type {
+        {Domain},
+        {Domain}Paginated,
+        Create{Domain}Payload,
+        Update{Domain}Payload
+      } from '~/types/{Domain}'
+
+      export const use{Domain}s = () => {
+        const { apiFetch } = useApi()
+
+        const list = (page = 1, query?: Record<string, string | number>) =>
+          apiFetch<{Domain}Paginated>(`/{domain}s`, { query: { page, ...query } })
+
+        const get = (id: number) =>
+          apiFetch<{Domain}>(`/{domain}s/${id}`)
+
+        const create = (payload: Create{Domain}Payload) =>
+          apiFetch<{Domain}>(`/{domain}s`, { method: 'POST', body: payload })
+
+        const update = (id: number, payload: Update{Domain}Payload) =>
+          apiFetch<{Domain}>(`/{domain}s/${id}`, { method: 'PUT', body: payload })
+
+        const remove = (id: number) =>
+          apiFetch<void>(`/{domain}s/${id}`, { method: 'DELETE' })
+
+        return { list, get, create, update, remove }
+      }
+  - id: 9
+    file: 'composables/{domain}/use{Domain}Form.ts'
+    type: composable
+    description: 'Composable pour gérer le formulaire {Domain} avec validation.'
+    template: |-
+      // composables/{domain}/use{Domain}Form.ts
+      import type { Create{Domain}Payload, Update{Domain}Payload } from '~/types/{Domain}'
+
+      export const use{Domain}Form = (initialData?: Partial<Create{Domain}Payload>) => {
+        const initialState: Create{Domain}Payload = {
+          // Ajoute ici les valeurs par défaut pour chaque champ
+          ...initialData
+        }
+
+        const form = reactive<Create{Domain}Payload>({ ...initialState })
+
+        const rules = {
+          // Ajoute ici les règles de validation pour chaque champ
+        }
+
+        const reset = () => Object.assign(form, initialState)
+
+        const isValid = computed(() =>
+          Object.entries(rules).every(([key, fieldRules]) =>
+            (fieldRules as Array<(v: unknown) => true | string>)
+              .every(rule => rule((form as Record<string, unknown>)[key]) === true)
+          )
+        )
+
+        const fill = (data: Partial<Create{Domain}Payload | Update{Domain}Payload>) =>
+          Object.assign(form, data)
+
+        return { form, rules, reset, isValid, fill }
+      }
+  - id: 10
+    file: 'stores/{domain}Store.ts'
+    type: store
+    description: 'Store Pinia dédié au domaine {Domain} : liste, item courant, loading, erreurs.'
+    template: |-
+      // stores/{domain}Store.ts
+      import type { {Domain}, {Domain}Paginated } from '~/types/{Domain}'
+
+      export const use{Domain}Store = defineStore('{domain}', {
+        state: () => ({
+          items:       [] as {Domain}[],
+          currentItem: null as {Domain} | null,
+          loading:     false,
+          error:       null as string | null,
+          meta: {
+            total:       0,
+            page:        1,
+            per_page:    10,
+            total_pages: 0
+          }
+        }),
+
+        getters: {
+          totalPages: (state): number => state.meta.total_pages,
+          isEmpty:    (state): boolean => state.items.length === 0 && !state.loading
+        },
+
+        actions: {
+          setList(data: {Domain}Paginated) {
+            this.items = data.{domain}s
+            this.meta  = data.meta
+          },
+          setCurrentItem(item: {Domain} | null) {
+            this.currentItem = item
+          },
+          setLoading(val: boolean) {
+            this.loading = val
+          },
+          setError(msg: string | null) {
+            this.error = msg
+          },
+          removeItem(id: number) {
+            this.items = this.items.filter(i => i.id !== id)
+            this.meta.total--
+          }
+        }
+      })
+  - id: 11
+    file: components/dialogs/ConfirmDialog.vue
+    type: component_global
+    description: Dialogue de confirmation générique réutilisable dans tout le projet.
+    template: |-
+      <!-- components/dialogs/ConfirmDialog.vue -->
+      <template>
+        <v-dialog
+          :model-value="props.modelValue"
+          @update:model-value="emit('update:modelValue', $event)"
+          max-width="500"
+        >
+          <v-card>
+            <v-card-title>{{ props.title }}</v-card-title>
+            <v-card-text>
+              {{ props.message }}
+              <br />
+              <span class="text-error text-caption">Cette action est irréversible.</span>
+            </v-card-text>
+            <v-card-actions>
+              <v-spacer />
+              <v-btn variant="text" @click="emit('update:modelValue', false)">Annuler</v-btn>
+              <v-btn
+                :color="props.confirmColor"
+                :loading="props.loading"
+                @click="emit('confirm')"
+              >
+                {{ props.confirmLabel }}
+              </v-btn>
+            </v-card-actions>
+          </v-card>
+        </v-dialog>
+      </template>
+
+      <script setup lang="ts">
+      interface Props {
+        modelValue: boolean
+        loading?:   boolean
+        title?:     string
+        message?:   string
+        confirmLabel?: string
+        confirmColor?: string
+      }
+
+      interface Emits {
+        (e: 'update:modelValue', value: boolean): void
+        (e: 'confirm'): void
+      }
+
+      const props = withDefaults(defineProps<Props>(), {
+        loading:      false,
+        title:        'Confirmer',
+        message:      'Êtes-vous sûr de vouloir effectuer cette action ?',
+        confirmLabel: 'Confirmer',
+        confirmColor: 'error'
+      })
+
+      const emit = defineEmits<Emits>()
+      </script>
+  - id: 12
+    file: components/ui/AppPagination.vue
+    type: component_global
+    description: Composant de pagination générique.
+    template: |-
+      <!-- components/ui/AppPagination.vue -->
+      <template>
+        <v-pagination
+          v-if="pages > 1"
+          :model-value="props.modelValue"
+          :length="pages"
+          @update:model-value="emit('update:modelValue', $event)"
+          class="mt-6"
+        />
+      </template>
+
+      <script setup lang="ts">
+      interface Props {
+        modelValue: number
+        total:      number
+        perPage?:   number
+      }
+
+      interface Emits {
+        (e: 'update:modelValue', value: number): void
+      }
+
+      const props = withDefaults(defineProps<Props>(), {
+        perPage: 10
+      })
+
+      const emit  = defineEmits<Emits>()
+      const pages = computed(() => Math.ceil(props.total / props.perPage))
+      </script>
+  - id: 13
+    file: components/ui/AppSearch.vue
+    type: component_global
+    description: Champ de recherche générique avec debounce.
+    template: |-
+      <!-- components/ui/AppSearch.vue -->
+      <template>
+        <v-text-field
+          v-model="local"
+          :label="props.label"
+          append-inner-icon="mdi-magnify"
+          clearable
+          class="mb-6"
+        />
+      </template>
+
+      <script setup lang="ts">
+      interface Props {
+        modelValue: string
+        label?:     string
+        debounce?:  number
+      }
+
+      interface Emits {
+        (e: 'update:modelValue', value: string): void
+      }
+
+      const props = withDefaults(defineProps<Props>(), {
+        label:    'Rechercher',
+        debounce: 300
+      })
+
+      const emit    = defineEmits<Emits>()
+      const local   = ref(props.modelValue)
+      let   timer: ReturnType<typeof setTimeout>
+
+      watch(local, (val) => {
+        clearTimeout(timer)
+        timer = setTimeout(() => emit('update:modelValue', val), props.debounce)
+      })
+      </script>
+
+      
+  - id: 14
+    file: composables/useNotification.ts
+    type: composable_global
+    description: Composable global pour afficher des toasts de succès/erreur via Vuetify snackbar.
+    template: |-
+      // composables/useNotification.ts
+      type NotificationType = 'success' | 'error' | 'warning' | 'info'
+
+      const state = reactive({
+        show:    false,
+        message: '',
+        type:    'success' as NotificationType,
+        timeout: 3000
+      })
+
+      export const useNotification = () => {
+        const notify = (message: string, type: NotificationType = 'success', timeout = 3000) => {
+          state.message = message
+          state.type    = type
+          state.timeout = timeout
+          state.show    = true
+        }
+
+        const success = (message: string) => notify(message, 'success')
+        const error   = (message: string) => notify(message, 'error')
+        const warning = (message: string) => notify(message, 'warning')
+
+        return { state, notify, success, error, warning }
+      }
+      // À placer dans app.vue :
+      // <AppSnackbar />
+  - id: 15
+    file: components/ui/AppSnackbar.vue
+    type: component_global
+    description: Composant snackbar global branché sur useNotification. À placer dans app.vue.
+    template: |-
+      <!-- components/ui/AppSnackbar.vue -->
+      <template>
+        <v-snackbar
+          v-model="state.show"
+          :color="state.type"
+          :timeout="state.timeout"
+          location="bottom right"
+        >
+          {{ state.message }}
+          <template #actions>
+            <v-btn variant="text" @click="state.show = false">Fermer</v-btn>
+          </template>
+        </v-snackbar>
+      </template>
+      
+      <script setup lang="ts">
+      const { state } = useNotification()
+      </script>
+      
+  - id: 16
+    file: 'pages/{domain}s/components/{Domain}Card.vue'
+    type: component_page
+    description: 'Carte d''affichage d''un {Domain} — composant spécifique à la page liste.'
+    template: |-
+      <!-- pages/{domain}s/components/{Domain}Card.vue -->
+      <template>
+        <v-card class="mb-4" elevation="2">
+          <v-card-title>{{ props.item.id }}</v-card-title>
+          <v-card-subtitle>
+            Créé le {{ new Date(props.item.created_at).toLocaleDateString('fr-FR') }}
+          </v-card-subtitle>
+          <v-card-text class="text-truncate">
+            <!-- Ajoute ici l'affichage des champs spécifiques -->
+          </v-card-text>
+          <v-card-actions>
+            <v-btn variant="text" color="secondary" @click="emit('show',   props.item.id)">Voir</v-btn>
+            <v-btn variant="text" color="primary"   @click="emit('edit',   props.item.id)">Éditer</v-btn>
+            <v-spacer />
+            <v-btn variant="text" color="error"     @click="emit('delete', props.item.id)">Supprimer</v-btn>
+          </v-card-actions>
+        </v-card>
+      </template>
+      <script setup lang="ts">
+      import type { {Domain} } from '~/types/{Domain}'
+
+      interface Props {
+        item: {Domain}
+      }
+
+      interface Emits {
+        (e: 'edit',   id: number): void
+        (e: 'show',   id: number): void
+        (e: 'delete', id: number): void
+      }
+
+      const props = defineProps<Props>()
+      const emit  = defineEmits<Emits>()
+      </script>
+
+      
+  - id: 17
+    file: 'pages/{domain}s/components/{Domain}Form.vue'
+    type: component_page
+    description: 'Formulaire de création/édition spécifique au domaine {Domain}.'
+    template: |-
+      <!-- pages/{domain}s/components/{Domain}Form.vue -->
+      <script setup lang="ts">
+      import type { Create{Domain}Payload, Update{Domain}Payload } from '~/types/{Domain}'
+
+      interface Props {
+        modelValue: Create{Domain}Payload | Update{Domain}Payload
+        loading?:   boolean
+        rules?:     Record<string, Array<(v: unknown) => true | string>>
+      }
+
+      interface Emits {
+        (e: 'update:modelValue', value: Create{Domain}Payload | Update{Domain}Payload): void
+        (e: 'submit'): void
+        (e: 'cancel'): void
+      }
+
+      const props = withDefaults(defineProps<Props>(), {
+        loading: false,
+        rules:   () => ({})
+      })
+
+      const emit = defineEmits<Emits>()
+
+      const update = (field: keyof (Create{Domain}Payload | Update{Domain}Payload), value: unknown) => {
+        emit('update:modelValue', { ...props.modelValue, [field]: value })
+      }
+      </script>
+
+      <template>
+        <v-form @submit.prevent="emit('submit')">
+          <!-- Ajoute ici les champs du formulaire -->
+          <div class="d-flex gap-2 mt-4">
+            <v-btn variant="text" @click="emit('cancel')">Annuler</v-btn>
+            <v-btn type="submit" color="primary" :loading="props.loading" block>
+              Enregistrer
+            </v-btn>
+          </div>
+        </v-form>
+      </template>
+  - id: 18
+    file: 'pages/{domain}s/components/{Domain}Detail.vue'
+    type: component_page
+    description: 'Affichage détaillé d''un {Domain} — utilisé par la page show.'
+    template: |-
+      <!-- pages/{domain}s/components/{Domain}Detail.vue -->
+      <template>
+        <v-card>
+          <v-card-title class="d-flex justify-space-between">
+            {Domain} #{{ props.item.id }}
+            <v-chip size="small" color="secondary">
+              {{ new Date(props.item.created_at).toLocaleDateString('fr-FR') }}
+            </v-chip>
+          </v-card-title>
+          <v-card-text>
+            <v-list>
+              <!-- Ajoute ici les champs spécifiques -->
+            </v-list>
+          </v-card-text>
+        </v-card>
+      </template>
+      <script setup lang="ts">
+      import type { {Domain} } from '~/types/{Domain}'
+
+      interface Props {
+        item: {Domain}
+      }
+
+      const props = defineProps<Props>()
+      </script>
+  - id: 19
+    file: 'pages/{domain}s/index.vue'
+    type: page
+    description: 'Page liste des {domain} avec pagination, recherche et store Pinia.'
+    template: |-
+      <!-- pages/{domain}s/index.vue -->
+      <template>
+        <v-container>
+          <div class="d-flex justify-space-between align-center mb-6">
+            <h1 class="text-h4">{Domain}s</h1>
+            <v-btn color="primary" :to="`/{domain}s/create`">Créer un(e) {Domain}</v-btn>
+          </div>
+
+          <AppSearch v-model="search" @update:modelValue="onSearch" />
+
+          <v-alert v-if="store.error" type="error" class="mb-4">{{ store.error }}</v-alert>
+
+          <v-row v-if="!store.loading">
+            <v-col
+              cols="12" md="6" lg="4"
+              v-for="item in store.items"
+              :key="item.id"
+            >
+              <{Domain}Card
+                :item="item"
+                @show="navigateTo(`/{domain}s/${$event}/show`)"
+                @edit="navigateTo(`/{domain}s/${$event}/edit`)"
+                @delete="onDeleteRequest"
+              />
+            </v-col>
+            <v-col v-if="store.isEmpty" cols="12">
+              <v-empty-state title="Aucun résultat" icon="mdi-magnify" />
+            </v-col>
+          </v-row>
+
+          <v-row v-else>
+            <v-col cols="12" md="6" lg="4" v-for="n in 6" :key="n">
+              <v-skeleton-loader type="card" />
+            </v-col>
+          </v-row>
+
+          <AppPagination
+            v-model="store.meta.page"
+            :total="store.meta.total"
+            :per-page="store.meta.per_page"
+          />
+
+          <ConfirmDialog
+            v-model="showDelete"
+            title="Supprimer le/la {Domain}"
+            message="Êtes-vous sûr de vouloir supprimer cet élément ?"
+            :loading="deleteLoading"
+            @confirm="onDeleteConfirm"
+          />
+        </v-container>
+      </template>
+      <script setup lang="ts">
+      definePageMeta({ middleware: 'auth' })
+
+      const { list, remove } = use{Domain}s()
+      const store            = use{Domain}Store()
+      const { success, error: notifyError } = useNotification()
+
+      const search        = ref('')
+      const deleteId      = ref<number | null>(null)
+      const deleteLoading = ref(false)
+      const showDelete    = ref(false)
+
+      const { refresh } = await useAsyncData(
+        '{domain}s-list',
+        async () => {
+          store.setLoading(true)
+          try {
+            const data = await list(store.meta.page, { search: search.value })
+            store.setList(data)
+          } catch (e: any) {
+            store.setError(e.data?.message || 'Erreur de chargement')
+          } finally {
+            store.setLoading(false)
+          }
+        },
+        { watch: [() => store.meta.page, search] }
+      )
+
+      const onSearch = () => { store.meta.page = 1 }
+
+      const onDeleteRequest = (id: number) => {
+        deleteId.value = id
+        showDelete.value = true
+      }
+
+      const onDeleteConfirm = async () => {
+        if (!deleteId.value) return
+        deleteLoading.value = true
+        try {
+          await remove(deleteId.value)
+          store.removeItem(deleteId.value)
+          showDelete.value = false
+          success('{Domain} supprimé avec succès')
+        } catch (e: any) {
+          notifyError(e.data?.message || 'Erreur lors de la suppression')
+        } finally {
+          deleteLoading.value = false
+        }
+      }
+      </script>
+  - id: 20
+    file: 'pages/{domain}s/create.vue'
+    type: page
+    description: 'Page de création d''un {Domain}.'
+    template: |-
+      <!-- pages/{domain}s/create.vue -->
+      <template>
+        <v-container max-width="700">
+          <div class="d-flex align-center mb-6 gap-2">
+            <v-btn icon="mdi-arrow-left" variant="text" :to="`/{domain}s`" />
+            <h1 class="text-h4">Créer un(e) {Domain}</h1>
+          </div>
+          <{Domain}Form
+            v-model="form"
+            :rules="rules"
+            :loading="loading"
+            @submit="onSubmit"
+            @cancel="navigateTo('/{domain}s')"
+          />
+        </v-container>
+      </template>
+      <script setup lang="ts">
+      definePageMeta({ middleware: 'auth' })
+
+      const { create }  = use{Domain}s()
+      const { form, rules, reset, isValid } = use{Domain}Form()
+      const { success, error: notifyError } = useNotification()
+
+      const loading = ref(false)
+
+      const onSubmit = async () => {
+        if (!isValid.value) return
+        loading.value = true
+        try {
+          await create(form)
+          reset()
+          success('{Domain} créé avec succès')
+          await navigateTo('/{domain}s')
+        } catch (e: any) {
+          notifyError(e.data?.message || 'Une erreur est survenue')
+        } finally {
+          loading.value = false
+        }
+      }
+      </script>
+  - id: 21
+    file: 'pages/{domain}s/[id]/edit.vue'
+    type: page
+    description: 'Page d''édition d''un {Domain} existant.'
+    template: |-
+      <!-- pages/{domain}s/[id]/edit.vue -->
+      <template>
+        <v-container max-width="700">
+          <div class="d-flex align-center mb-6 gap-2">
+            <v-btn icon="mdi-arrow-left" variant="text" :to="`/{domain}s/${id}/show`" />
+            <h1 class="text-h4">Éditer {Domain} #{{ id }}</h1>
+          </div>
+          <{Domain}Form
+            v-model="form"
+            :rules="rules"
+            :loading="loading"
+            @submit="onSubmit"
+            @cancel="navigateTo(`/{domain}s/${id}/show`)"
+          />
+        </v-container>
+      </template>
+      <script setup lang="ts">
+      definePageMeta({ middleware: 'auth' })
+
+      const route = useRoute()
+      const id    = Number(route.params.id)
+
+      const { get, update }  = use{Domain}s()
+      const store            = use{Domain}Store()
+      const { form, rules, isValid, fill } = use{Domain}Form()
+      const { success, error: notifyError } = useNotification()
+
+      const loading = ref(false)
+
+      const { data } = await useAsyncData(
+        `{domain}-edit-${id}`,
+        async () => {
+          const item = await get(id)
+          store.setCurrentItem(item)
+          fill(item)
+          return item
+        }
+      )
+
+      const onSubmit = async () => {
+        if (!isValid.value) return
+        loading.value = true
+        try {
+          const updated = await update(id, form)
+          store.setCurrentItem(updated)
+          success('{Domain} mis à jour avec succès')
+          await navigateTo('/{domain}s')
+        } catch (e: any) {
+          notifyError(e.data?.message || 'Une erreur est survenue')
+        } finally {
+          loading.value = false
+        }
+      }
+      </script>
+  - id: 22
+    file: 'pages/{domain}s/[id]/show.vue'
+    type: page
+    description: 'Page de détail d''un {Domain}.'
+    template: |-
+      <!-- pages/{domain}s/[id]/show.vue -->
+      <template>
+        <v-container max-width="700">
+          <div class="d-flex justify-space-between align-center mb-6">
+            <div class="d-flex align-center gap-2">
+              <v-btn icon="mdi-arrow-left" variant="text" to="/{domain}s" />
+              <h1 class="text-h4">{Domain} #{{ id }}</h1>
+            </div>
+            <div class="d-flex gap-2">
+              <v-btn color="primary" :to="`/{domain}s/${id}/edit`">Éditer</v-btn>
+              <v-btn color="error" variant="outlined" @click="showDelete = true">Supprimer</v-btn>
+            </div>
+          </div>
+
+          <{Domain}Detail v-if="store.currentItem" :item="store.currentItem" />
+          <v-skeleton-loader v-else type="article" />
+
+          <ConfirmDialog
+            v-model="showDelete"
+            title="Supprimer le/la {Domain}"
+            message="Êtes-vous sûr de vouloir supprimer cet élément ?"
+            :loading="deleteLoading"
+            @confirm="onDeleteConfirm"
+          />
+        </v-container>
+      </template>
+      <script setup lang="ts">
+      definePageMeta({ middleware: 'auth' })
+
+      const route = useRoute()
+      const id    = Number(route.params.id)
+
+      const { get, remove } = use{Domain}s()
+      const store           = use{Domain}Store()
+      const { success, error: notifyError } = useNotification()
+
+      const deleteLoading = ref(false)
+      const showDelete    = ref(false)
+
+      const { data } = await useAsyncData(
+        `{domain}-show-${id}`,
+        async () => {
+          const item = await get(id)
+          store.setCurrentItem(item)
+          return item
+        }
+      )
+
+      const onDeleteConfirm = async () => {
+        deleteLoading.value = true
+        try {
+          await remove(id)
+          success('{Domain} supprimé avec succès')
+          await navigateTo('/{domain}s')
+        } catch (e: any) {
+          notifyError(e.data?.message || 'Erreur lors de la suppression')
+        } finally {
+          deleteLoading.value = false
+        }
+      }
+      </script>
+  - id: 23
+    file: stores/useAuthStore.ts
+    type: store
+    description: 'Store Pinia pour l''authentification.'
+    template: |-
+      // stores/useAuthStore.ts
+      // Note: remplacer 'User' par le type réel de votre API d'authentification
+
+      interface User {
+        id: number
+        email: string
+        name?: string
+      }
+
+      export const useAuthStore = defineStore('auth', {
+        state: () => ({
+          user: null as User | null
+        }),
+
+        getters: {
+          isAuthenticated: (state): boolean => !!state.user,
+          userId: (state): number | null => state.user?.id ?? null
+        },
+
+        actions: {
+          setUser(user: User) {
+            this.user = user
+          },
+          logout() {
+            this.user = null
+          }
+        }
+      })
+  - id: 24
+    file: middleware/auth.ts
+    type: middleware
+    description: Middleware pour protéger les routes authentifiées.
+    template: |-
+      // middleware/auth.ts
+      export default defineNuxtRouteMiddleware(() => {
+        const authStore = useAuthStore()
+        if (!authStore.isAuthenticated) {
+          return navigateTo('/login')
+        }
+      })
+  - id: 25
+    file: types/Auth.ts
+    type: type_global
+    description: 'Interface User pour le store d''authentification.'
+    template: |-
+      // types/Auth.ts
+
+      export interface User {
+        id: number
+        email: string
+        name?: string
+        // Ajoute ici les champs spécifiques à ton modèle User Rails
+      }
+
+      export interface AuthResponse {
+        token: string
+        user: User
+      }
+  - id: 101
+    file: 'tests/server/api/{domain}/index.get.spec.ts'
+    type: test
+    testedFileId: 1
+    description: 'Test unitaire de la route GET /{domain}s — auth, pagination, appel Rails.'
+    template: |-
+      // tests/server/api/{domain}/index.get.spec.ts
+      import { describe, it, expect, vi, beforeEach } from 'vitest'
+      import { mockNuxtImport } from '@nuxt/test-utils/runtime'
+
+      const mockFetch = vi.fn()
+      vi.mock('ofetch', () => ({ $fetch: mockFetch }))
+
+      mockNuxtImport('getCookie', () => vi.fn())
+      mockNuxtImport('getQuery',  () => vi.fn(() => ({ page: 1 })))
+      mockNuxtImport('useRuntimeConfig', () => vi.fn(() => ({ railsApiBase: 'http://rails.test' })))
+
+      describe('GET /api/{domain}s', () => {
+        beforeEach(() => vi.clearAllMocks())
+
+        it('retourne 401 si pas de token', async () => {
+          const { getCookie } = await import('#imports')
+          vi.mocked(getCookie).mockReturnValue(undefined)
+
+          const handler = (await import('~/server/api/{domain}/index.get')).default
+          await expect(handler({} as any)).rejects.toMatchObject({ statusCode: 401 })
+        })
+
+        it('appelle Rails avec le token et retourne les données', async () => {
+          const { getCookie } = await import('#imports')
+          vi.mocked(getCookie).mockReturnValue('test-token')
+
+          const mockData = {
+            {domain}s: [{ id: 1, created_at: '2024-01-01', updated_at: '2024-01-01' }],
+            meta: { total: 1, page: 1, per_page: 10, total_pages: 1 }
+          }
+          mockFetch.mockResolvedValue(mockData)
+
+          const handler = (await import('~/server/api/{domain}/index.get')).default
+          const result  = await handler({} as any)
+
+          expect(mockFetch).toHaveBeenCalledWith(
+            'http://rails.test/{domain}s',
+            expect.objectContaining({
+              headers: { Authorization: 'Bearer test-token' }
+            })
+          )
+          expect(result).toEqual(mockData)
+        })
+      })
+  - id: 102
+    file: 'tests/server/api/{domain}/[id].get.spec.ts'
+    type: test
+    testedFileId: 2
+    description: 'Test unitaire de la route GET /{domain}s/:id.'
+    template: |-
+      // tests/server/api/{domain}/[id].get.spec.ts
+      import { describe, it, expect, vi, beforeEach } from 'vitest'
+      import { mockNuxtImport } from '@nuxt/test-utils/runtime'
+
+      const mockFetch = vi.fn()
+      vi.mock('ofetch', () => ({ $fetch: mockFetch }))
+
+      mockNuxtImport('getCookie',        () => vi.fn())
+      mockNuxtImport('getRouterParam',   () => vi.fn())
+      mockNuxtImport('useRuntimeConfig', () => vi.fn(() => ({ railsApiBase: 'http://rails.test' })))
+
+      describe('GET /api/{domain}s/:id', () => {
+        beforeEach(() => vi.clearAllMocks())
+
+        it('retourne 401 si pas de token', async () => {
+          const { getCookie } = await import('#imports')
+          vi.mocked(getCookie).mockReturnValue(undefined)
+
+          const handler = (await import('~/server/api/{domain}/[id].get')).default
+          await expect(handler({} as any)).rejects.toMatchObject({ statusCode: 401 })
+        })
+
+        it('retourne 400 si id manquant', async () => {
+          const { getCookie, getRouterParam } = await import('#imports')
+          vi.mocked(getCookie).mockReturnValue('token')
+          vi.mocked(getRouterParam).mockReturnValue(undefined)
+
+          const handler = (await import('~/server/api/{domain}/[id].get')).default
+          await expect(handler({} as any)).rejects.toMatchObject({ statusCode: 400 })
+        })
+
+        it('retourne le {domain} depuis Rails', async () => {
+          const { getCookie, getRouterParam } = await import('#imports')
+          vi.mocked(getCookie).mockReturnValue('token')
+          vi.mocked(getRouterParam).mockReturnValue('42')
+
+          const mock{Domain} = { id: 42, created_at: '2024-01-01', updated_at: '2024-01-01' }
+          mockFetch.mockResolvedValue(mock{Domain})
+
+          const handler = (await import('~/server/api/{domain}/[id].get')).default
+          const result  = await handler({} as any)
+
+          expect(mockFetch).toHaveBeenCalledWith(
+            'http://rails.test/{domain}s/42',
+            expect.objectContaining({ headers: { Authorization: 'Bearer token' } })
+          )
+          expect(result).toEqual(mock{Domain})
+        })
+      })
+  - id: 103
+    file: 'tests/server/api/{domain}/index.post.spec.ts'
+    type: test
+    testedFileId: 3
+    description: 'Test unitaire de la route POST /{domain}s.'
+    template: |-
+      // tests/server/api/{domain}/index.post.spec.ts
+      import { describe, it, expect, vi, beforeEach } from 'vitest'
+      import { mockNuxtImport } from '@nuxt/test-utils/runtime'
+
+      const mockFetch = vi.fn()
+      vi.mock('ofetch', () => ({ $fetch: mockFetch }))
+
+      mockNuxtImport('getCookie',        () => vi.fn())
+      mockNuxtImport('readBody',         () => vi.fn())
+      mockNuxtImport('useRuntimeConfig', () => vi.fn(() => ({ railsApiBase: 'http://rails.test' })))
+
+      describe('POST /api/{domain}s', () => {
+        beforeEach(() => vi.clearAllMocks())
+
+        it('retourne 401 si pas de token', async () => {
+          const { getCookie } = await import('#imports')
+          vi.mocked(getCookie).mockReturnValue(undefined)
+
+          const handler = (await import('~/server/api/{domain}/index.post')).default
+          await expect(handler({} as any)).rejects.toMatchObject({ statusCode: 401 })
+        })
+
+        it('retourne 400 si body manquant', async () => {
+          const { getCookie, readBody } = await import('#imports')
+          vi.mocked(getCookie).mockReturnValue('token')
+          vi.mocked(readBody).mockResolvedValue(null)
+
+          const handler = (await import('~/server/api/{domain}/index.post')).default
+          await expect(handler({} as any)).rejects.toMatchObject({ statusCode: 400 })
+        })
+
+        it('crée le {domain} et le retourne', async () => {
+          const { getCookie, readBody } = await import('#imports')
+          const payload = { /* Ajoute ici les champs du payload */ }
+          vi.mocked(getCookie).mockReturnValue('token')
+          vi.mocked(readBody).mockResolvedValue(payload)
+
+          const created = { id: 1, ...payload, created_at: '2024-01-01', updated_at: '2024-01-01' }
+          mockFetch.mockResolvedValue(created)
+
+          const handler = (await import('~/server/api/{domain}/index.post')).default
+          const result  = await handler({} as any)
+
+          expect(mockFetch).toHaveBeenCalledWith(
+            'http://rails.test/{domain}s',
+            expect.objectContaining({ method: 'POST', body: payload })
+          )
+          expect(result).toEqual(created)
+        })
+      })
+  - id: 104
+    file: 'tests/server/api/{domain}/[id].delete.spec.ts'
+    type: test
+    testedFileId: 5
+    description: 'Test unitaire de la route DELETE /{domain}s/:id.'
+    template: |-
+      // tests/server/api/{domain}/[id].delete.spec.ts
+      import { describe, it, expect, vi, beforeEach } from 'vitest'
+      import { mockNuxtImport } from '@nuxt/test-utils/runtime'
+
+      const mockFetch = vi.fn()
+      vi.mock('ofetch', () => ({ $fetch: mockFetch }))
+
+      mockNuxtImport('getCookie',        () => vi.fn())
+      mockNuxtImport('getRouterParam',   () => vi.fn())
+      mockNuxtImport('useRuntimeConfig', () => vi.fn(() => ({ railsApiBase: 'http://rails.test' })))
+
+      describe('DELETE /api/{domain}s/:id', () => {
+        beforeEach(() => vi.clearAllMocks())
+
+        it('supprime et retourne { success: true }', async () => {
+          const { getCookie, getRouterParam } = await import('#imports')
+          vi.mocked(getCookie).mockReturnValue('token')
+          vi.mocked(getRouterParam).mockReturnValue('42')
+          mockFetch.mockResolvedValue(undefined)
+
+          const handler = (await import('~/server/api/{domain}/[id].delete')).default
+          const result  = await handler({} as any)
+
+          expect(mockFetch).toHaveBeenCalledWith(
+            'http://rails.test/{domain}s/42',
+            expect.objectContaining({ method: 'DELETE' })
+          )
+          expect(result).toEqual({ success: true })
+        })
+      })
+  - id: 105
+    file: 'tests/composables/{domain}/use{Domain}s.spec.ts'
+    type: test
+    testedFileId: 8
+    description: 'Test unitaire du composable use{Domain}s — toutes les opérations CRUD.'
+    template: |-
+      // tests/composables/{domain}/use{Domain}s.spec.ts
+      import { describe, it, expect, vi, beforeEach } from 'vitest'
+      import { use{Domain}s } from '~/composables/{domain}/use{Domain}s'
+
+      const mockApiFetch = vi.fn()
+      vi.mock('~/composables/useApi', () => ({
+        useApi: () => ({ apiFetch: mockApiFetch })
+      }))
+
+      describe('use{Domain}s', () => {
+        beforeEach(() => vi.clearAllMocks())
+
+        it('list() appelle GET /{domain}s avec la page', async () => {
+          const paginated = {
+            {domain}s: [],
+            meta: { total: 0, page: 1, per_page: 10, total_pages: 0 }
+          }
+          mockApiFetch.mockResolvedValue(paginated)
+
+          const { list } = use{Domain}s()
+          const result   = await list(2)
+
+          expect(mockApiFetch).toHaveBeenCalledWith('/{domain}s', { query: { page: 2 } })
+          expect(result).toEqual(paginated)
+        })
+
+        it('get() appelle GET /{domain}s/:id', async () => {
+          const item = { id: 1, created_at: '2024-01-01', updated_at: '2024-01-01' }
+          mockApiFetch.mockResolvedValue(item)
+
+          const { get } = use{Domain}s()
+          await get(1)
+
+          expect(mockApiFetch).toHaveBeenCalledWith('/{domain}s/1')
+        })
+
+        it('create() appelle POST /{domain}s', async () => {
+          const payload = { /* Ajoute ici les champs */ }
+          mockApiFetch.mockResolvedValue({ id: 1, ...payload })
+
+          const { create } = use{Domain}s()
+          await create(payload as any)
+
+          expect(mockApiFetch).toHaveBeenCalledWith(
+            '/{domain}s',
+            { method: 'POST', body: payload }
+          )
+        })
+
+        it('remove() appelle DELETE /{domain}s/:id', async () => {
+          mockApiFetch.mockResolvedValue(undefined)
+
+          const { remove } = use{Domain}s()
+          await remove(42)
+
+          expect(mockApiFetch).toHaveBeenCalledWith('/{domain}s/42', { method: 'DELETE' })
+        })
+      })
+  - id: 106
+    file: 'tests/composables/{domain}/use{Domain}Form.spec.ts'
+    type: test
+    testedFileId: 9
+    description: 'Test du composable use{Domain}Form — état, validation, reset, fill.'
+    template: |-
+      // tests/composables/{domain}/use{Domain}Form.spec.ts
+      import { describe, it, expect } from 'vitest'
+      import { use{Domain}Form } from '~/composables/{domain}/use{Domain}Form'
+
+      describe('use{Domain}Form', () => {
+        it('initialise le formulaire avec les valeurs par défaut', () => {
+          const { form } = use{Domain}Form()
+          expect(form).toBeDefined()
+        })
+
+        it('fill() met à jour les valeurs du formulaire', () => {
+          const { form, fill } = use{Domain}Form()
+          const data = { /* Ajoute ici un exemple de données */ } as any
+          fill(data)
+          // Vérifie que les champs sont mis à jour
+          Object.keys(data).forEach(key => {
+            expect((form as any)[key]).toBe(data[key])
+          })
+        })
+
+        it('reset() remet le formulaire à son état initial', () => {
+          const { form, fill, reset } = use{Domain}Form()
+          const initial = { ...form }
+          fill({ /* Ajoute ici des données modifiées */ } as any)
+          reset()
+          Object.keys(initial).forEach(key => {
+            expect((form as any)[key]).toBe((initial as any)[key])
+          })
+        })
+
+        it('isValid est false si les champs requis sont vides', () => {
+          const { isValid } = use{Domain}Form()
+          expect(isValid.value).toBe(false)
+        })
+      })
+  - id: 107
+    file: 'tests/stores/{domain}Store.spec.ts'
+    type: test
+    testedFileId: 10
+    description: 'Test du store Pinia {Domain} — state, getters, actions.'
+    template: |-
+      // tests/stores/{domain}Store.spec.ts
+      import { describe, it, expect, beforeEach } from 'vitest'
+      import { setActivePinia, createPinia } from 'pinia'
+      import { use{Domain}Store } from '~/stores/{domain}Store'
+
+      describe('{Domain}Store', () => {
+        beforeEach(() => {
+          setActivePinia(createPinia())
+        })
+
+        it('a un état initial correct', () => {
+          const store = use{Domain}Store()
+          expect(store.items).toEqual([])
+          expect(store.currentItem).toBeNull()
+          expect(store.loading).toBe(false)
+          expect(store.error).toBeNull()
+        })
+
+        it('setList() met à jour items et meta', () => {
+          const store = use{Domain}Store()
+          const data  = {
+            {domain}s: [{ id: 1, created_at: '2024-01-01', updated_at: '2024-01-01' }],
+            meta: { total: 1, page: 1, per_page: 10, total_pages: 1 }
+          }
+          store.setList(data as any)
+          expect(store.items).toHaveLength(1)
+          expect(store.meta.total).toBe(1)
+        })
+
+        it('removeItem() retire l\'item et décrémente le total', () => {
+          const store = use{Domain}Store()
+          store.setList({
+            {domain}s: [
+              { id: 1, created_at: '', updated_at: '' },
+              { id: 2, created_at: '', updated_at: '' }
+            ],
+            meta: { total: 2, page: 1, per_page: 10, total_pages: 1 }
+          } as any)
+
+          store.removeItem(1)
+          expect(store.items).toHaveLength(1)
+          expect(store.items[0].id).toBe(2)
+          expect(store.meta.total).toBe(1)
+        })
+
+        it('isEmpty est true quand items est vide et loading est false', () => {
+          const store = use{Domain}Store()
+          expect(store.isEmpty).toBe(true)
+          store.setLoading(true)
+          expect(store.isEmpty).toBe(false)
+        })
+
+        it('setError() met à jour le message d\'erreur', () => {
+          const store = use{Domain}Store()
+          store.setError('Erreur de chargement')
+          expect(store.error).toBe('Erreur de chargement')
+          store.setError(null)
+          expect(store.error).toBeNull()
+        })
+      })
+  - id: 108
+    file: 'tests/components/{domain}/{Domain}Card.spec.ts'
+    type: test
+    testedFileId: 16
+    description: 'Test du composant {Domain}Card — rendu et émission d''événements.'
+    template: |-
+      // tests/components/{domain}/{Domain}Card.spec.ts
+      import { describe, it, expect } from 'vitest'
+      import { mountSuspended } from '@nuxt/test-utils/runtime'
+      import {Domain}Card from '~/pages/{domain}s/components/{Domain}Card.vue'
+
+      const mock{Domain} = {
+        id:         1,
+        created_at: '2024-01-01T00:00:00Z',
+        updated_at: '2024-01-01T00:00:00Z',
+        // Ajoute ici les champs spécifiques
+      }
+
+      describe('{Domain}Card', () => {
+        it('affiche l\'id du {domain}', async () => {
+          const wrapper = await mountSuspended({Domain}Card, {
+            props: { item: mock{Domain} as any }
+          })
+          expect(wrapper.text()).toContain('1')
+        })
+
+        it('émet "edit" avec l\'id au clic Éditer', async () => {
+          const wrapper = await mountSuspended({Domain}Card, {
+            props: { item: mock{Domain} as any }
+          })
+          await wrapper.find('[data-test="btn-edit"], button:nth-child(2)').trigger('click')
+          expect(wrapper.emitted('edit')?.[0]).toEqual([1])
+        })
+
+        it('émet "delete" avec l\'id au clic Supprimer', async () => {
+          const wrapper = await mountSuspended({Domain}Card, {
+            props: { item: mock{Domain} as any }
+          })
+          await wrapper.find('[data-test="btn-delete"], button:last-child').trigger('click')
+          expect(wrapper.emitted('delete')?.[0]).toEqual([1])
+        })
+      })
+  - id: 109
+    file: tests/middleware/auth.spec.ts
+    type: test
+    testedFileId: 24
+    description: Test du middleware auth — redirection si non authentifié.
+    template: |-
+      // tests/middleware/auth.spec.ts
+      import { describe, it, expect, vi, beforeEach } from 'vitest'
+      import { mockNuxtImport } from '@nuxt/test-utils/runtime'
+
+      const mockNavigateTo = vi.fn()
+      const mockAuthStore  = vi.fn()
+
+      mockNuxtImport('navigateTo',    () => mockNavigateTo)
+      mockNuxtImport('useAuthStore',  () => mockAuthStore)
+
+      describe('middleware/auth', () => {
+        beforeEach(() => vi.clearAllMocks())
+
+        it('redirige vers /login si non authentifié', async () => {
+          mockAuthStore.mockReturnValue({ isAuthenticated: false })
+
+          const middleware = (await import('~/middleware/auth')).default
+          middleware({} as any, {} as any)
+
+          expect(mockNavigateTo).toHaveBeenCalledWith('/login')
+        })
+
+        it('ne redirige pas si authentifié', async () => {
+          mockAuthStore.mockReturnValue({ isAuthenticated: true })
+
+          const middleware = (await import('~/middleware/auth')).default
+          middleware({} as any, {} as any)
+
+          expect(mockNavigateTo).not.toHaveBeenCalled()
+        })
+      })
+  - id: 201
+    file: playwright.config.ts
+    type: config
+    description: Configuration Playwright — baseURL, session partagée, reporters.
+    template: |-
+      // playwright.config.ts
+      import { defineConfig, devices } from '@playwright/test'
+
+      export default defineConfig({
+        testDir:       './tests/e2e',
+        fullyParallel: false,
+        forbidOnly:    !!process.env.CI,
+        retries:       process.env.CI ? 2 : 0,
+        workers:       process.env.CI ? 1 : undefined,
+
+        reporter: [['html', { outputFolder: 'playwright-report' }], ['list']],
+
+        use: {
+          baseURL:    process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:3000',
+          trace:      'on-first-retry',
+          screenshot: 'only-on-failure',
+          video:      'retain-on-failure',
+          locale:     'fr-FR',
+        },
+
+        projects: [
+          { name: 'setup', testMatch: '**/fixtures/auth.setup.ts' },
+          {
+            name: 'chromium',
+            use: {
+              ...devices['Desktop Chrome'],
+              storageState: 'tests/e2e/.auth/user.json',
+            },
+            dependencies: ['setup'],
+          },
+        ],
+
+        webServer: {
+          command:            'npm run dev',
+          url:                'http://localhost:3000',
+          reuseExistingServer: !process.env.CI,
+          timeout:            120_000,
+        },
+      })
+  - id: 202
+    file: tests/e2e/fixtures/auth.setup.ts
+    type: e2e_fixture
+    description: Setup Playwright — authentifie et sauvegarde la session une seule fois.
+    template: |-
+      // tests/e2e/fixtures/auth.setup.ts
+      import { test as setup, expect } from '@playwright/test'
+      import { LoginPage } from '../pages/login.page'
+
+      const AUTH_FILE = 'tests/e2e/.auth/user.json'
+
+      setup("authentification de l'utilisateur de test", async ({ page }) => {
+        const loginPage = new LoginPage(page)
+        await loginPage.goto()
+        await loginPage.login(
+          process.env.E2E_USER_EMAIL    || 'test@example.com',
+          process.env.E2E_USER_PASSWORD || 'password123'
+        )
+        await expect(page).not.toHaveURL('/login')
+        await page.context().storageState({ path: AUTH_FILE })
+      })
+  - id: 203
+    file: tests/e2e/fixtures/test-helpers.ts
+    type: e2e_fixture
+    description: Helpers pour créer/nettoyer des données de test via API directement.
+    template: |-
+      // tests/e2e/fixtures/test-helpers.ts
+      import type { APIRequestContext } from '@playwright/test'
+
+      export async function createViaApi(
+        request: APIRequestContext,
+        endpoint: string,
+        data: Record<string, unknown>
+      ) {
+        const response = await request.post(`/api${endpoint}`, { data })
+        if (!response.ok()) {
+          throw new Error(`API error ${response.status()}: ${await response.text()}`)
+        }
+        return response.json()
+      }
+
+      export async function deleteViaApi(
+        request: APIRequestContext,
+        endpoint: string,
+        id: number
+      ) {
+        await request.delete(`/api${endpoint}/${id}`)
+      }
+
+      export async function loginAs(
+        request: APIRequestContext,
+        email: string,
+        password: string
+      ) {
+        const response = await request.post('/api/auth/login', { data: { email, password } })
+        return response.json()
+      }
+  - id: 204
+    file: tests/e2e/pages/login.page.ts
+    type: e2e_pom
+    description: Page Object Model login — partagé entre auth et crud.
+    template: |-
+      // tests/e2e/pages/login.page.ts
+      import type { Page, Locator } from '@playwright/test'
+      import { expect } from '@playwright/test'
+
+      export class LoginPage {
+        readonly page:          Page
+        readonly emailInput:    Locator
+        readonly passwordInput: Locator
+        readonly submitButton:  Locator
+        readonly errorToast:    Locator
+
+        constructor(page: Page) {
+          this.page          = page
+          this.emailInput    = page.getByLabel('Email')
+          this.passwordInput = page.getByLabel('Mot de passe')
+          this.submitButton  = page.getByRole('button', { name: 'Se connecter' })
+          this.errorToast    = page.locator('.v-snackbar')
+        }
+
+        async goto() { await this.page.goto('/login') }
+
+        async login(email: string, password: string) {
+          await this.emailInput.fill(email)
+          await this.passwordInput.fill(password)
+          await this.submitButton.click()
+        }
+
+        async expectError(message: string) {
+          await this.errorToast.waitFor({ state: 'visible' })
+          await expect(this.errorToast).toContainText(message)
+        }
+      }
+  - id: 205
+    file: 'tests/e2e/pages/{domain}s.page.ts'
+    type: e2e_pom
+    description: 'Page Object Model pour les pages CRUD {Domain}.'
+    template: |-
+      // tests/e2e/pages/{domain}s.page.ts
+      import type { Page, Locator } from '@playwright/test'
+      import { expect } from '@playwright/test'
+
+      export class {Domain}sPage {
+        readonly page:         Page
+        readonly createButton: Locator
+        readonly searchInput:  Locator
+        readonly successToast: Locator
+
+        constructor(page: Page) {
+          this.page         = page
+          this.createButton = page.getByRole('link', { name: /créer/i })
+          this.searchInput  = page.getByLabel('Rechercher')
+          this.successToast = page.locator('.v-snackbar').filter({ hasText: /succès/i })
+        }
+
+        async goto()              { await this.page.goto('/{domain}s') }
+        async gotoCreate()        { await this.page.goto('/{domain}s/create') }
+        async gotoShow(id: number){ await this.page.goto(`/{domain}s/${id}/show`) }
+        async gotoEdit(id: number){ await this.page.goto(`/{domain}s/${id}/edit`) }
+
+        async getCards()          { return this.page.locator('.v-card').all() }
+
+        async clickShow(i = 0) {
+          (await this.getCards())[i].getByRole('button', { name: /voir/i }).click()
+        }
+        async clickEdit(i = 0) {
+          (await this.getCards())[i].getByRole('button', { name: /éditer/i }).click()
+        }
+        async clickDelete(i = 0) {
+          (await this.getCards())[i].getByRole('button', { name: /supprimer/i }).click()
+        }
+
+        async confirmDelete() {
+          await this.page.getByRole('dialog').getByRole('button', { name: /supprimer/i }).click()
+        }
+
+        async search(query: string) {
+          await this.searchInput.fill(query)
+          await this.page.waitForTimeout(400) // debounce 300ms
+        }
+
+        async expectSuccessToast() {
+          await this.successToast.waitFor({ state: 'visible', timeout: 5000 })
+        }
+
+        async expectUrl(pattern: string | RegExp) {
+          await expect(this.page).toHaveURL(pattern)
+        }
+      }
+  - id: 206
+    file: 'tests/e2e/{domain}s/list.spec.ts'
+    type: e2e_test
+    description: 'Tests e2e liste {Domain} — affichage, recherche, redirection auth.'
+    template: |-
+      // tests/e2e/{domain}s/list.spec.ts
+      import { test, expect } from '@playwright/test'
+      import { {Domain}sPage } from '../pages/{domain}s.page'
+
+      test.describe('Liste des {Domain}s', () => {
+
+        test('affiche la page avec le bouton créer', async ({ page }) => {
+          const p = new {Domain}sPage(page)
+          await p.goto()
+          await expect(page).toHaveURL('/{domain}s')
+          await expect(p.createButton).toBeVisible()
+        })
+
+        test('redirige vers /login si non authentifié', async ({ page, context }) => {
+          await context.clearCookies()
+          await page.goto('/{domain}s')
+          await expect(page).toHaveURL('/login')
+        })
+
+        test('la recherche filtre les résultats', async ({ page }) => {
+          const p = new {Domain}sPage(page)
+          await p.goto()
+          const before = (await p.getCards()).length
+          await p.search('zzz_inexistant_zzz')
+          const after = await p.getCards()
+          expect(after.length).toBeLessThanOrEqual(before)
+        })
+
+        test('le bouton créer navigue vers /create', async ({ page }) => {
+          const p = new {Domain}sPage(page)
+          await p.goto()
+          await p.createButton.click()
+          await expect(page).toHaveURL('/{domain}s/create')
+        })
+
+      })
+  - id: 207
+    file: 'tests/e2e/{domain}s/crud.spec.ts'
+    type: e2e_test
+    description: 'Tests e2e CRUD complet {Domain} — create → show → edit → delete.'
+    template: |-
+      // tests/e2e/{domain}s/crud.spec.ts
+      import { test, expect } from '@playwright/test'
+      import { {Domain}sPage } from '../pages/{domain}s.page'
+      import { createViaApi, deleteViaApi } from '../fixtures/test-helpers'
+
+      test.describe('CRUD {Domain}', () => {
+
+        // Créer un {domain} via API avant les tests (plus rapide que l'UI)
+        // et le supprimer après pour garder la base propre
+        let test{Domain}Id: number
+
+        test.beforeAll(async ({ request }) => {
+          const created = await createViaApi(request, '/{domain}s', {
+            // Ajoute ici les champs requis pour créer un {Domain} de test
+          })
+          test{Domain}Id = created.id
+        })
+
+        test.afterAll(async ({ request }) => {
+          if (test{Domain}Id) {
+            await deleteViaApi(request, '/{domain}s', test{Domain}Id)
+          }
+        })
+
+        test('affiche le détail via la page show', async ({ page }) => {
+          const p = new {Domain}sPage(page)
+          await p.gotoShow(test{Domain}Id)
+          await expect(page).toHaveURL(`/{domain}s/${test{Domain}Id}/show`)
+          await expect(page.getByRole('link', { name: /éditer/i })).toBeVisible()
+          await expect(page.getByRole('button', { name: /supprimer/i })).toBeVisible()
+        })
+
+        test('crée un {domain} via le formulaire', async ({ page }) => {
+          const p = new {Domain}sPage(page)
+          await p.gotoCreate()
+
+          // Ajoute ici le remplissage des champs spécifiques au modèle {Domain}
+          // Exemple : await page.getByLabel('Nom').fill('Test E2E')
+
+          await page.getByRole('button', { name: /enregistrer/i }).click()
+          await expect(page).toHaveURL('/{domain}s', { timeout: 5000 })
+          await p.expectSuccessToast()
+        })
+
+        test('édite un {domain} via le formulaire', async ({ page }) => {
+          const p = new {Domain}sPage(page)
+          await p.gotoEdit(test{Domain}Id)
+          await expect(page).toHaveURL(`/{domain}s/${test{Domain}Id}/edit`)
+
+          // Ajoute ici la modification d'un champ spécifique
+          // Exemple : await page.getByLabel('Nom').fill('Nom modifié')
+
+          await page.getByRole('button', { name: /enregistrer/i }).click()
+          await expect(page).toHaveURL('/{domain}s', { timeout: 5000 })
+          await p.expectSuccessToast()
+        })
+
+        test('supprime un {domain} avec confirmation', async ({ page }) => {
+          // Créer un item dédié à la suppression pour ne pas casser les autres tests
+          const toDelete = await createViaApi(page.request, '/{domain}s', {
+            // Ajoute ici les champs requis
+          })
+
+          const p = new {Domain}sPage(page)
+          await p.gotoShow(toDelete.id)
+          await page.getByRole('button', { name: /supprimer/i }).click()
+          await expect(page.getByRole('dialog')).toBeVisible()
+          await p.confirmDelete()
+
+          await expect(page).toHaveURL('/{domain}s', { timeout: 5000 })
+          await p.expectSuccessToast()
+        })
+
+      })
+  commentaire: 'CRUD complet générique pour un modèle {Domain} avec Nuxt 3 (frontend + backend Nitro) et Rails. Les placeholders
+    {domain} (minuscules) et {Domain} (PascalCase) doivent être remplacés par le nom du modèle.'
+  actions:
+  - id: 1
+    file: 'server/api/{domain}/index.get.ts'
+    type: server
+    description: 'Route GET pour lister les {domain}'
+  - id: 2
+    file: 'server/api/{domain}/[id].get.ts'
+    type: server
+    description: 'Route GET pour un {domain} par ID'
+  - id: 3
+    file: 'server/api/{domain}/index.post.ts'
+    type: server
+    description: 'Route POST pour créer un {domain}'
+  - id: 4
+    file: 'server/api/{domain}/[id].put.ts'
+    type: server
+    description: 'Route PUT pour mettre à jour un {domain}'
+  - id: 5
+    file: 'server/api/{domain}/[id].delete.ts'
+    type: server
+    description: 'Route DELETE pour supprimer un {domain}'
+  - id: 6
+    file: 'types/{Domain}.ts'
+    type: type
+    description: 'Interfaces TypeScript pour {Domain}'
+  - id: 7
+    file: composables/useApi.ts
+    type: composable_global
+    description: Composable central global pour les appels API
+  - id: 8
+    file: 'composables/{domain}/use{Domain}s.ts'
+    type: composable
+    description: 'Opérations CRUD pour {domain}'
+  - id: 9
+    file: 'composables/{domain}/use{Domain}Form.ts'
+    type: composable
+    description: Gestion du formulaire avec validation
+  - id: 10
+    file: 'stores/{domain}Store.ts'
+    type: store
+    description: 'Store Pinia dédié au domaine {Domain}'
+  - id: 11
+    file: components/dialogs/ConfirmDialog.vue
+    type: component_global
+    description: Dialogue de confirmation générique
+  - id: 12
+    file: components/ui/AppPagination.vue
+    type: component_global
+    description: Pagination générique
+  - id: 13
+    file: components/ui/AppSearch.vue
+    type: component_global
+    description: Champ de recherche avec debounce
+  - id: 14
+    file: composables/useNotification.ts
+    type: composable_global
+    description: Toast de notification global
+  - id: 15
+    file: components/ui/AppSnackbar.vue
+    type: component_global
+    description: Snackbar global branché sur useNotification
+  - id: 16
+    file: 'pages/{domain}s/components/{Domain}Card.vue'
+    type: component_page
+    description: 'Carte d''affichage d''un {Domain}'
+  - id: 17
+    file: 'pages/{domain}s/components/{Domain}Form.vue'
+    type: component_page
+    description: Formulaire de création/édition
+  - id: 18
+    file: 'pages/{domain}s/components/{Domain}Detail.vue'
+    type: component_page
+    description: Affichage détaillé pour la page show
+  - id: 19
+    file: 'pages/{domain}s/index.vue'
+    type: page
+    description: 'Liste des {domain} avec pagination et store'
+  - id: 20
+    file: 'pages/{domain}s/create.vue'
+    type: page
+    description: 'Page de création de {Domain}'
+  - id: 21
+    file: 'pages/{domain}s/[id]/edit.vue'
+    type: page
+    description: 'Page d''édition de {Domain}'
+  - id: 22
+    file: 'pages/{domain}s/[id]/show.vue'
+    type: page
+    description: 'Page de détail de {Domain}'
+  - id: 23
+    file: stores/useAuthStore.ts
+    type: store
+    description: 'Store Pinia pour l''authentification (User typé inline)'
+  - id: 24
+    file: middleware/auth.ts
+    type: middleware
+    description: Middleware de protection des routes
+  - id: 25
+    file: types/Auth.ts
+    type: type_global
+    description: 'Interface User pour l''authentification'
+  - id: 101
+    file: 'tests/server/api/{domain}/index.get.spec.ts'
+    type: test
+    testedFileId: 1
+    description: 'Test unitaire de la route GET /{domain}s — auth, pagination, appel Rails.'
+  - id: 102
+    file: 'tests/server/api/{domain}/[id].get.spec.ts'
+    type: test
+    testedFileId: 2
+    description: 'Test unitaire de la route GET /{domain}s/:id.'
+  - id: 103
+    file: 'tests/server/api/{domain}/index.post.spec.ts'
+    type: test
+    testedFileId: 3
+    description: 'Test unitaire de la route POST /{domain}s.'
+  - id: 104
+    file: 'tests/server/api/{domain}/[id].delete.spec.ts'
+    type: test
+    testedFileId: 5
+    description: 'Test unitaire de la route DELETE /{domain}s/:id.'
+  - id: 105
+    file: 'tests/composables/{domain}/use{Domain}s.spec.ts'
+    type: test
+    testedFileId: 8
+    description: 'Test unitaire du composable use{Domain}s — toutes les opérations CRUD.'
+  - id: 106
+    file: 'tests/composables/{domain}/use{Domain}Form.spec.ts'
+    type: test
+    testedFileId: 9
+    description: 'Test du composable use{Domain}Form — état, validation, reset, fill.'
+  - id: 107
+    file: 'tests/stores/{domain}Store.spec.ts'
+    type: test
+    testedFileId: 10
+    description: 'Test du store Pinia {Domain} — state, getters, actions.'
+  - id: 108
+    file: 'tests/components/{domain}/{Domain}Card.spec.ts'
+    type: test
+    testedFileId: 16
+    description: 'Test du composant {Domain}Card — rendu et émission d''événements.'
+  - id: 109
+    file: tests/middleware/auth.spec.ts
+    type: test
+    testedFileId: 24
+    description: Test du middleware auth — redirection si non authentifié.
+  - id: 201
+    file: playwright.config.ts
+    type: config
+    description: Configuration Playwright — baseURL, session partagée, reporters.
+  - id: 202
+    file: tests/e2e/fixtures/auth.setup.ts
+    type: e2e_fixture
+    description: Setup Playwright — authentifie et sauvegarde la session une seule fois.
+  - id: 203
+    file: tests/e2e/fixtures/test-helpers.ts
+    type: e2e_fixture
+    description: Helpers pour créer/nettoyer des données de test via API directement.
+  - id: 204
+    file: tests/e2e/pages/login.page.ts
+    type: e2e_pom
+    description: Page Object Model login — partagé entre auth et crud.
+  - id: 205
+    file: 'tests/e2e/pages/{domain}s.page.ts'
+    type: e2e_pom
+    description: 'Page Object Model pour les pages CRUD {Domain}.'
+  - id: 206
+    file: 'tests/e2e/{domain}s/list.spec.ts'
+    type: e2e_test
+    description: 'Tests e2e liste {Domain} — affichage, recherche, redirection auth.'
+  - id: 207
+    file: 'tests/e2e/{domain}s/crud.spec.ts'
+    type: e2e_test
+    description: 'Tests e2e CRUD complet {Domain} — create → show → edit → delete.'

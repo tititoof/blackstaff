@@ -1,0 +1,110 @@
+{
+  "pattern": {
+    "name": "Pont (Bridge) — Nuxt 3",
+    "description": "Sépare une abstraction de son implémentation pour qu'elles évoluent indépendamment. Idéal pour découpler la logique métier (préparer les données) du détail technique (rendre/exporter les données).",
+
+    "whenToUse": {
+      "mustMatch": [
+        "Séparer la logique d'affichage de son système de rendu",
+        "Séparer la logique d'export du format de sortie (PDF, CSV, JSON)",
+        "Séparer la logique de notification du canal d'envoi (toast, email, push)",
+        "Séparer la logique de validation du moteur de validation",
+        "Avoir deux axes de variation indépendants"
+      ],
+      "shouldMatch": [
+        "Utiliser Nuxt 3 avec TypeScript",
+        "Vouloir ajouter un format ou un canal sans impacter la logique métier",
+        "Utiliser une factory pour assembler abstraction et implémentation"
+      ],
+      "mustNotMatch": [
+        "N'avoir qu'un seul format ou canal de sortie (pas besoin de pont)",
+        "Adapter deux interfaces incompatibles (utiliser Adapter à la place)",
+        "Créer des familles d'objets cohérents (utiliser Abstract Factory)"
+      ],
+      "examples": [
+        {
+          "prompt": "Créer un système d'export articles en CSV et JSON",
+          "match": true,
+          "reason": "Logique d'export (abstraction) séparée du format (implémentation)."
+        },
+        {
+          "prompt": "Créer un système de notification avec toast et email",
+          "match": true,
+          "reason": "Logique de notification (abstraction) séparée du canal (implémentation)."
+        },
+        {
+          "prompt": "Adapter le format Rails en camelCase",
+          "match": false,
+          "reason": "Conversion d'interface — utiliser Adapter à la place."
+        }
+      ],
+      "decisionTree": {
+        "question1": "As-tu une logique métier et un détail technique qui doivent évoluer indépendamment ?",
+        "ifYes": {
+          "question2": "Ces deux dimensions varient-elles selon des axes différents ?",
+          "ifYes": "✅ Utiliser ce pattern",
+          "ifNo": "⚠️ Envisager un simple Strategy à la place"
+        },
+        "ifNo": "❌ Ne pas utiliser ce pattern"
+      }
+    },
+
+    "files": [
+      {
+        "id": 1,
+        "file": "utils/bridge/{bridge}/interfaces.ts",
+        "type": "type",
+        "description": "Interface du renderer (implémentation) pour le pont {Bridge}.",
+        "template": "// utils/bridge/{bridge}/interfaces.ts\n\n// Interface de l'implémentation — le détail technique\nexport interface {Bridge}Renderer {\n  render(data: Record<string, unknown>[], context: string): void\n  // Ajoute ici les méthodes spécifiques au renderer\n}\n\n// Types de formats/canaux disponibles\nexport type {Bridge}Format = 'formatA' | 'formatB'\n// Exemple : export type ExportFormat = 'csv' | 'json'\n//           export type NotificationChannel = 'toast' | 'email'"
+      },
+      {
+        "id": 2,
+        "file": "utils/bridge/{bridge}/{Bridge}Renderers.ts",
+        "type": "util",
+        "description": "Implémentations concrètes du renderer pour chaque format/canal.",
+        "template": "// utils/bridge/{bridge}/{Bridge}Renderers.ts\nimport type { {Bridge}Renderer, {Bridge}Format } from './interfaces'\n\n// Implémentation concrète — format/canal A\nclass {Bridge}RendererA implements {Bridge}Renderer {\n  render(data: Record<string, unknown>[], context: string): void {\n    // Ajoute ici le rendu format A\n    // Exemple CSV : générer le blob et déclencher le téléchargement\n  }\n}\n\n// Implémentation concrète — format/canal B\nclass {Bridge}RendererB implements {Bridge}Renderer {\n  render(data: Record<string, unknown>[], context: string): void {\n    // Ajoute ici le rendu format B\n    // Exemple JSON : sérialiser et télécharger\n  }\n}\n\n// Registry des renderers\nexport const {bridge}Renderers: Record<{Bridge}Format, {Bridge}Renderer> = {\n  formatA: new {Bridge}RendererA(),\n  formatB: new {Bridge}RendererB(),\n}"
+      },
+      {
+        "id": 3,
+        "file": "utils/bridge/{bridge}/{Bridge}Abstraction.ts",
+        "type": "util",
+        "description": "Abstraction et abstractions concrètes du pont {Bridge} — logique métier.",
+        "template": "// utils/bridge/{bridge}/{Bridge}Abstraction.ts\nimport type { {Bridge}Renderer, {Bridge}Format } from './interfaces'\nimport { {bridge}Renderers } from './{Bridge}Renderers'\n\n// Abstraction de base — logique commune\nexport abstract class {Bridge}Abstraction {\n  constructor(protected renderer: {Bridge}Renderer) {}\n\n  // Point d'entrée commun\n  execute(data: Record<string, unknown>[], context: string): void {\n    const prepared = this.prepare(data)\n    this.renderer.render(prepared, context)\n  }\n\n  // Chaque abstraction concrète prépare les données différemment\n  protected abstract prepare(data: Record<string, unknown>[]): Record<string, unknown>[]\n}\n\n// Abstraction concrète — logique métier spécifique\nexport class {Bridge}ConcreteAbstraction extends {Bridge}Abstraction {\n  protected prepare(data: Record<string, unknown>[]): Record<string, unknown>[] {\n    // Ajoute ici la transformation des données avant rendu\n    // Exemple : sélectionner/renommer les colonnes pour l'export\n    return data.map(item => ({\n      // Ajoute ici le mapping des champs\n    }))\n  }\n}\n\n// Factory — assemble abstraction + implémentation\nexport const create{Bridge} = (\n  type: 'concrete',\n  format: {Bridge}Format\n): {Bridge}Abstraction => {\n  const renderer = {bridge}Renderers[format]\n  const abstractions = {\n    concrete: {Bridge}ConcreteAbstraction\n  }\n  return new abstractions[type](renderer)\n}"
+      },
+      {
+        "id": 4,
+        "file": "composables/use{Bridge}.ts",
+        "type": "composable",
+        "description": "Composable exposant le pont {Bridge} — les pages ne connaissent que ce composable.",
+        "template": "// composables/use{Bridge}.ts\nimport { create{Bridge} } from '~/utils/bridge/{bridge}/{Bridge}Abstraction'\nimport type { {Bridge}Format } from '~/utils/bridge/{bridge}/interfaces'\n\nexport const use{Bridge} = () => {\n  const execute = (\n    data: Record<string, unknown>[],\n    format: {Bridge}Format,\n    context: string\n  ) => {\n    // Bridge : l'abstraction et le renderer évoluent séparément\n    const bridge = create{Bridge}('concrete', format)\n    bridge.execute(data, context)\n  }\n\n  return { execute }\n}"
+      },
+      {
+        "id": 5,
+        "file": "tests/utils/bridge/{bridge}/{Bridge}Abstraction.spec.ts",
+        "type": "test",
+        "testedFileId": 3,
+        "description": "Tests unitaires de l'abstraction et de la factory du pont {Bridge}.",
+        "template": "// tests/utils/bridge/{bridge}/{Bridge}Abstraction.spec.ts\nimport { describe, it, expect, vi } from 'vitest'\nimport { create{Bridge}, {Bridge}ConcreteAbstraction } from '~/utils/bridge/{bridge}/{Bridge}Abstraction'\nimport type { {Bridge}Renderer } from '~/utils/bridge/{bridge}/interfaces'\n\nconst mockRenderer: {Bridge}Renderer = {\n  render: vi.fn()\n}\n\nconst mockData = [\n  { id: 1 },\n  { id: 2 }\n]\n\ndescribe('{Bridge}Abstraction', () => {\n\n  beforeEach(() => vi.clearAllMocks())\n\n  it('execute() prépare les données et appelle le renderer', () => {\n    const bridge = new {Bridge}ConcreteAbstraction(mockRenderer)\n    bridge.execute(mockData, 'test')\n    expect(mockRenderer.render).toHaveBeenCalledOnce()\n  })\n\n  it('le renderer reçoit les données préparées', () => {\n    const bridge = new {Bridge}ConcreteAbstraction(mockRenderer)\n    bridge.execute(mockData, 'test')\n    const [calledData] = (mockRenderer.render as any).mock.calls[0]\n    expect(Array.isArray(calledData)).toBe(true)\n  })\n\n  it('create{Bridge}() assemble la bonne abstraction avec le bon renderer', () => {\n    const bridge = create{Bridge}('concrete', 'formatA')\n    expect(bridge).toBeInstanceOf({Bridge}ConcreteAbstraction)\n  })\n\n  it('changer de format ne modifie pas la logique de préparation', () => {\n    const bridgeA = create{Bridge}('concrete', 'formatA')\n    const bridgeB = create{Bridge}('concrete', 'formatB')\n    // Les deux utilisent la même logique de préparation\n    expect(bridgeA).toBeInstanceOf({Bridge}ConcreteAbstraction)\n    expect(bridgeB).toBeInstanceOf({Bridge}ConcreteAbstraction)\n  })\n\n})"
+      },
+      {
+        "id": 6,
+        "file": "tests/utils/bridge/{bridge}/{Bridge}Renderers.spec.ts",
+        "type": "test",
+        "testedFileId": 2,
+        "description": "Tests unitaires des renderers concrets du pont {Bridge}.",
+        "template": "// tests/utils/bridge/{bridge}/{Bridge}Renderers.spec.ts\nimport { describe, it, expect } from 'vitest'\nimport { {bridge}Renderers } from '~/utils/bridge/{bridge}/{Bridge}Renderers'\n\nconst mockData = [{ id: 1, name: 'Test' }]\n\ndescribe('{Bridge}Renderers', () => {\n\n  it('le registry contient tous les formats', () => {\n    expect({bridge}Renderers.formatA).toBeDefined()\n    expect({bridge}Renderers.formatB).toBeDefined()\n  })\n\n  it('formatA — render() ne lève pas d\\'erreur', () => {\n    expect(() => {\n      {bridge}Renderers.formatA.render(mockData, 'test')\n    }).not.toThrow()\n  })\n\n  it('formatB — render() ne lève pas d\\'erreur', () => {\n    expect(() => {\n      {bridge}Renderers.formatB.render(mockData, 'test')\n    }).not.toThrow()\n  })\n\n})"
+      }
+    ],
+
+    "commentaire": "Pont générique pour Nuxt 3 + TypeScript. Placeholders : {bridge} (kebab-case) et {Bridge} (PascalCase). Exemple : bridge=export, Bridge=Export.",
+
+    "actions": [
+      { "id": 1, "file": "utils/bridge/{bridge}/interfaces.ts",                       "type": "type",       "description": "Interface du renderer et types de formats" },
+      { "id": 2, "file": "utils/bridge/{bridge}/{Bridge}Renderers.ts",                 "type": "util",       "description": "Implémentations concrètes des renderers" },
+      { "id": 3, "file": "utils/bridge/{bridge}/{Bridge}Abstraction.ts",               "type": "util",       "description": "Abstraction, abstractions concrètes et factory" },
+      { "id": 4, "file": "composables/use{Bridge}.ts",                                 "type": "composable", "description": "Composable exposant le pont" },
+      { "id": 5, "file": "tests/utils/bridge/{bridge}/{Bridge}Abstraction.spec.ts",    "type": "test",       "testedFileId": 3, "description": "Tests de l'abstraction et factory" },
+      { "id": 6, "file": "tests/utils/bridge/{bridge}/{Bridge}Renderers.spec.ts",      "type": "test",       "testedFileId": 2, "description": "Tests des renderers concrets" }
+    ]
+  }
+}

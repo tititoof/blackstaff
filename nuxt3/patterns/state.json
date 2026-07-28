@@ -1,0 +1,45 @@
+{
+  "pattern": {
+    "name": "État (State) — Nuxt 3",
+    "description": "Modifie le comportement d'un objet selon son état interne. Idéal pour les formulaires avec modes view/edit/submitting, les workflows de validation, ou les composants multi-états.",
+    "whenToUse": {
+      "mustMatch": [
+        "Comportement différent selon l'état (view/edit/submitting/error)",
+        "Machine à états pour workflows (draft/review/published)",
+        "Éviter les if/else ou switch complexes sur l'état"
+      ],
+      "shouldMatch": ["Utiliser Nuxt 3 avec TypeScript", "États bien définis et finis"],
+      "mustNotMatch": ["Deux états seulement (utiliser un simple boolean)", "Logique métier dans les états (ils gèrent le comportement, pas la logique)"]
+    },
+    "files": [
+      {
+        "id": 1,
+        "file": "utils/states/{state}/{State}States.ts",
+        "type": "util",
+        "description": "États concrets et gestionnaire de contexte pour {State}.",
+        "template": "// utils/states/{state}/{State}States.ts\n// State — gestion des états de {State}\n\n// Interface du contexte partagé entre tous les états\nexport interface {State}Context {\n  // Ajoute ici les données et méthodes du contexte\n  // Exemple : data, submit(), reset(), setLoading()\n}\n\n// Interface commune des états — chaque état implémente ce qu'il fait\nexport abstract class {State}State {\n  abstract getName(): string\n  // Ajoute ici les méthodes communes à tous les états\n  onEnter(context: {State}Context): void {}\n  onExit(context: {State}Context):  void {}\n}\n\n// États concrets — un par état possible\nexport class {State}ViewState extends {State}State {\n  getName() { return 'view' }\n  // Comportement en mode lecture\n  onEnter(context: {State}Context): void {\n    // Ajoute ici ce qui se passe quand on entre en mode view\n  }\n}\n\nexport class {State}EditState extends {State}State {\n  getName() { return 'edit' }\n  onEnter(context: {State}Context): void {\n    // Ajoute ici ce qui se passe quand on entre en mode edit\n  }\n}\n\nexport class {State}SubmittingState extends {State}State {\n  getName() { return 'submitting' }\n  onEnter(context: {State}Context): void {\n    // Ajoute ici ce qui se passe lors de la soumission\n    // context.submit()\n  }\n}\n\nexport class {State}ErrorState extends {State}State {\n  constructor(private message: string) { super() }\n  getName() { return 'error' }\n  getError() { return this.message }\n}\n\n// Gestionnaire de contexte — orchestre les transitions\nexport class {State}Machine {\n  private state: {State}State\n\n  constructor(\n    initialState: {State}State,\n    private context: {State}Context\n  ) {\n    this.state = initialState\n    this.state.onEnter(context)\n  }\n\n  transition(newState: {State}State): void {\n    this.state.onExit(this.context)\n    this.state = newState\n    this.state.onEnter(this.context)\n  }\n\n  getStateName(): string { return this.state.getName() }\n  isIn(name: string):    boolean { return this.state.getName() === name }\n  getCurrent():          {State}State { return this.state }\n}"
+      },
+      {
+        "id": 2,
+        "file": "composables/{state}/use{State}Machine.ts",
+        "type": "composable",
+        "description": "Composable exposant la machine à états {State} de façon réactive.",
+        "template": "// composables/{state}/use{State}Machine.ts\nimport {\n  {State}Machine,\n  {State}ViewState,\n  {State}EditState,\n  {State}SubmittingState,\n  {State}ErrorState\n} from '~/utils/states/{state}/{State}States'\nimport type { {State}Context } from '~/utils/states/{state}/{State}States'\n\nexport const use{State}Machine = (initialData: Record<string, unknown> = {}) => {\n  const data    = reactive({ ...initialData })\n  const stateName = ref('view')\n\n  const context: {State}Context = {\n    // Ajoute ici l'implémentation du contexte\n  }\n\n  const machine = new {State}Machine(new {State}ViewState(), context)\n\n  const transition = (newState: InstanceType<typeof {State}ViewState>) => {\n    machine.transition(newState)\n    stateName.value = machine.getStateName()\n  }\n\n  return {\n    data,\n    stateName: readonly(stateName),\n    isView:       computed(() => machine.isIn('view')),\n    isEdit:       computed(() => machine.isIn('edit')),\n    isSubmitting: computed(() => machine.isIn('submitting')),\n    isError:      computed(() => machine.isIn('error')),\n    toView:       () => transition(new {State}ViewState()),\n    toEdit:       () => transition(new {State}EditState()),\n    toSubmitting: () => transition(new {State}SubmittingState()),\n    toError:      (msg: string) => transition(new {State}ErrorState(msg) as any)\n  }\n}"
+      },
+      {
+        "id": 3,
+        "file": "tests/utils/states/{state}/{State}States.spec.ts",
+        "type": "test",
+        "testedFileId": 1,
+        "description": "Tests de la machine à états {State} — transitions et comportements.",
+        "template": "// tests/utils/states/{state}/{State}States.spec.ts\nimport { describe, it, expect, vi } from 'vitest'\nimport {\n  {State}Machine,\n  {State}ViewState,\n  {State}EditState,\n  {State}SubmittingState,\n  {State}ErrorState\n} from '~/utils/states/{state}/{State}States'\n\nconst mockContext = { /* Ajoute ici le contexte mock */ }\n\ndescribe('{State}Machine', () => {\n\n  it('démarre dans l\\'état initial', () => {\n    const m = new {State}Machine(new {State}ViewState(), mockContext)\n    expect(m.getStateName()).toBe('view')\n  })\n\n  it('transition() change d\\'état', () => {\n    const m = new {State}Machine(new {State}ViewState(), mockContext)\n    m.transition(new {State}EditState())\n    expect(m.getStateName()).toBe('edit')\n  })\n\n  it('isIn() retourne true pour l\\'état courant', () => {\n    const m = new {State}Machine(new {State}ViewState(), mockContext)\n    expect(m.isIn('view')).toBe(true)\n    expect(m.isIn('edit')).toBe(false)\n  })\n\n  it('onEnter() est appelé lors d\\'une transition', () => {\n    const enterSpy = vi.spyOn({State}EditState.prototype, 'onEnter')\n    const m        = new {State}Machine(new {State}ViewState(), mockContext)\n    m.transition(new {State}EditState())\n    expect(enterSpy).toHaveBeenCalledWith(mockContext)\n  })\n\n  it('{State}ErrorState expose le message d\\'erreur', () => {\n    const errState = new {State}ErrorState('Erreur de réseau')\n    expect(errState.getError()).toBe('Erreur de réseau')\n    expect(errState.getName()).toBe('error')\n  })\n\n})"
+      }
+    ],
+    "commentaire": "État générique pour Nuxt 3. Placeholders : {state} (kebab-case) et {State} (PascalCase).",
+    "actions": [
+      { "id": 1, "file": "utils/states/{state}/{State}States.ts",               "type": "util",       "description": "États concrets et machine à états" },
+      { "id": 2, "file": "composables/{state}/use{State}Machine.ts",            "type": "composable", "description": "Composable réactif pour la machine à états" },
+      { "id": 3, "file": "tests/utils/states/{state}/{State}States.spec.ts",    "type": "test", "testedFileId": 1, "description": "Tests transitions et comportements" }
+    ]
+  }
+}
