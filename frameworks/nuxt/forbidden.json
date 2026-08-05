@@ -1,0 +1,8 @@
+[
+  { "name": "axios", "reason": "Nuxt fournit $fetch/useFetch natifs, aucune dépendance HTTP externe nécessaire", "useInstead": "$fetch (côté serveur) ou useFetch (côté client)" },
+  { "name": "@nuxtjs/composition-api", "reason": "Package Nuxt 2, obsolète et incompatible avec Nuxt 3/4 (déjà en Composition API nativement)", "useInstead": "API native de Nuxt 3/4" },
+  { "name": "vue-router", "reason": "Nuxt fournit son propre routing basé fichiers, l'import direct de vue-router est presque toujours une erreur", "useInstead": "useRouter()/navigateTo() de Nuxt" },
+  { "name": "node-fetch", "reason": "Nuxt/Nitro fournit $fetch nativement, aucune lib de fetch externe nécessaire", "useInstead": "$fetch" },
+  { "name": "request", "reason": "Package Node obsolète et déprécié depuis des années", "useInstead": "$fetch" },
+  { "name": "defineController", "reason": "N'existe pas dans Nitro/H3 — confusion avec un autre framework", "useInstead": "defineEventHandler" }
+]

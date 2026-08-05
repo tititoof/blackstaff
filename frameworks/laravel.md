@@ -40,12 +40,24 @@ Toujours vérifier les requêtes générées par une relation Eloquent
 endpoint comme terminé — le N+1 silencieux est l'erreur de performance la
 plus fréquente sur les API Laravel.
 
-# Form Requests pour toute validation non trivialeFor
+# Form Requests pour toute validation non triviale
 
 Dès qu'une validation dépasse 2-3 règles simples, l'extraire dans un Form
 Request dédié (`php artisan make:request`) plutôt que de valider
 directement dans le controller — garde le controller lisible et la
 validation testable isolément.
+
+# Langue des noms
+
+Tous les noms de fichiers, classes, méthodes et variables sont TOUJOURS en
+anglais — même si l'instruction ou la description de la tâche est en
+français. Traduire les termes métier soi-même (ex: "recherche" → "search",
+"catégorie" → "category", "utilisateur" → "user"), en respectant les
+conventions de casse PHP/Laravel standard : `PascalCase` pour les classes
+(`SearchCriteria.php`), `camelCase` pour les méthodes et variables
+(`addKeyword()`), `snake_case` pour les colonnes de migration et les clés
+de tableau de validation. Aucun caractère accentué dans un nom de fichier,
+une classe, une méthode ou une colonne.
 
 # Pièges transverses (toute version, tout pattern)
 

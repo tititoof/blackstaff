@@ -1,7 +1,7 @@
 ---
 type: PatternIndex
 title: Pattern Auth — index
-tags: [auth]
+tags: [auth, authentification, connexion, inscription, session, login, protéger, sécuriser]
 ---
 
 # Principe de composition
@@ -79,3 +79,9 @@ patterns (auth, crud, futurs).
 Aucune modification du résolveur n8n n'est nécessaire — la composition
 frontend/backend reste générique, et le résolveur suit les liens markdown
 qu'ils pointent vers la base racine ou vers ce pattern.
+
+# Exemples d'instructions qui déclenchent ce pattern
+
+- "Implémente la connexion et l'inscription des utilisateurs."
+- "Protège ces pages pour qu'elles ne soient accessibles qu'aux utilisateurs connectés."
+- "Ajoute un système de session pour garder l'utilisateur connecté entre les visites."

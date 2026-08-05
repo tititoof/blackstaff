@@ -1,7 +1,7 @@
 ---
 type: PatternIndex
 title: Pattern CRUD — index
-tags: [crud]
+tags: [crud, création, modification, suppression, liste, gérer, gestion, ressource]
 ---
 
 # Principe de composition
@@ -64,3 +64,9 @@ et génère les fichiers correspondants.
 Même principe que le pattern `auth` : ajouter dans la base racine
 [frameworks/](/frameworks/index.md), puis créer
 `recipes/backend/{nom}-crud-api.md` qui lie vers cette base.
+
+# Exemples d'instructions qui déclenchent ce pattern
+
+- "Je veux pouvoir gérer les articles : les créer, les modifier, les lister et les supprimer."
+- "Ajoute une page pour créer des produits, avec possibilité de les éditer ensuite."
+- "Interface de gestion des utilisateurs (liste, création, édition, suppression)."

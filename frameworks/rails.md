@@ -53,6 +53,17 @@ laisser grossir le controller ou le modèle — controllers et modèles
 restent fins, la logique métier vit dans des objets dédiés et testables
 isolément.
 
+# Langue des noms
+
+Tous les noms de fichiers, classes, méthodes et variables sont TOUJOURS en
+anglais — même si l'instruction ou la description de la tâche est en
+français. Traduire les termes métier soi-même (ex: "recherche" → "search",
+"catégorie" → "category", "utilisateur" → "user"), en respectant les
+conventions de casse Ruby standard : `snake_case` pour les fichiers et
+méthodes (`search_criteria.rb`, `def add_keyword`), `PascalCase` pour les
+classes (`class SearchCriteria`). Aucun caractère accentué dans un nom de
+fichier, une classe, une méthode ou une colonne de migration.
+
 # Pièges transverses (toute version, tout pattern)
 
 - Ne jamais désactiver `protect_from_forgery` globalement pour

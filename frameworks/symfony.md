@@ -53,6 +53,17 @@ Toute règle d'autorisation au-delà d'un rôle simple (`ROLE_ADMIN`) doit
 passer par un Voter — jamais de logique conditionnelle d'autorisation
 écrite directement dans un controller.
 
+# Langue des noms
+
+Tous les noms de fichiers, classes, méthodes et variables sont TOUJOURS en
+anglais — même si l'instruction ou la description de la tâche est en
+français. Traduire les termes métier soi-même (ex: "recherche" → "search",
+"catégorie" → "category", "utilisateur" → "user"), en respectant les
+conventions de casse PHP/Symfony standard : `PascalCase` pour les classes
+et entités (`SearchCriteria.php`), `camelCase` pour les méthodes et
+propriétés (`addKeyword()`). Aucun caractère accentué dans un nom de
+fichier, une classe, une méthode ou une propriété d'entité.
+
 # Pièges transverses (toute version, tout pattern)
 
 - L'ordre des firewalls dans `security.yaml` est significatif — Symfony

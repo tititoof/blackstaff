@@ -1,7 +1,7 @@
 ---
 type: PatternIndex
 title: Pattern Monteur (Builder GoF) — index
-tags: [builder, design-pattern, gof]
+tags: [builder, design-pattern, gof, assembler, étape par étape, options facultatives, construire progressivement, chaînage, configuration complexe]
 ---
 
 # Principe
@@ -60,6 +60,19 @@ Trois rôles distincts :
 | Rails | [rails.md](/frameworks/rails.md) | [v8](/frameworks/rails/v8.md) |
 | Laravel | [laravel.md](/frameworks/laravel.md) | [v13](/frameworks/laravel/v13.md) |
 | Symfony | [symfony.md](/frameworks/symfony.md) | [v7 LTS](/frameworks/symfony/v7.md) |
+
+# Exemples d'instructions qui déclenchent ce pattern
+
+Ces formulations, sans jamais nommer "builder" explicitement, doivent être détectées automatiquement grâce aux tags ci-dessus :
+
+- "J'ai besoin d'assembler la configuration d'un rapport étape par étape, avec plusieurs options facultatives (filtres, colonnes, format)."
+- "Je veux pouvoir construire une requête de recherche progressivement, en ajoutant des critères un par un avant de la valider."
+- "Un formulaire multi-étapes où chaque étape enrichit un objet final, avec validation seulement à la fin."
+
+Si une instruction de ce type ne déclenche PAS le pattern, vérifier :
+
+1. Que les mots-clés utilisés correspondent effectivement aux tags déclarés ci-dessus (le matching est une simple recherche de sous-chaîne, sensible à la formulation).
+2. Que le fichier existe bien sous patterns/builder/index.md (chemin exact).
 
 # Quand NE PAS utiliser
 
