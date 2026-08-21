@@ -1,0 +1,13 @@
+{
+  "displayName": "nuxt-auth-utils",
+  "url": "https://github.com/atinux/nuxt-auth-utils",
+  "exports": [
+    { "name": "setUserSession", "side": "server", "note": "Crée/actualise la session (event, data) — à appeler après login/register réussi." },
+    { "name": "getUserSession", "side": "server", "note": "Lit la session courante (event) — retourne {} si non connecté, jamais d'erreur." },
+    { "name": "requireUserSession", "side": "server", "note": "Comme getUserSession mais lève une 401 si non connecté — à utiliser pour protéger un endpoint." },
+    { "name": "clearUserSession", "side": "server", "note": "Supprime la session courante (event) — utilisé dans le endpoint logout." },
+    { "name": "hashPassword", "side": "server", "note": "Hash un mot de passe avant stockage (scrypt par défaut)." },
+    { "name": "verifyPassword", "side": "server", "note": "Vérifie un mot de passe en clair contre son hash stocké." },
+    { "name": "useUserSession", "side": "client", "note": "Composable auto-importé — expose { loggedIn, user, session, fetch, clear } côté client/pages." }
+  ]
+}

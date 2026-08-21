@@ -1,0 +1,15 @@
+{
+  "title": "ui-component reference sheet",
+  "description": "Forme attendue d'une fiche reference-sheets/ui-components/<lib>/*.json — le champ 'api' n'est PAS validé en détail : c'est la donnée brute renvoyée par le serveur MCP source, dont la forme dépend de la lib et peut évoluer sans qu'on la contrôle.",
+  "type": "object",
+  "required": ["component", "library", "api"],
+  "properties": {
+    "component": { "type": "string" },
+    "library": { "type": "string" },
+    "version": { "type": ["string", "null"] },
+    "source": { "type": ["string", "null"], "enum": ["mcp", "manual", null] },
+    "mcpServerUrl": { "type": ["string", "null"] },
+    "fetchedAt": { "type": ["string", "null"] },
+    "api": { "type": "object" }
+  }
+}

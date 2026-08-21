@@ -1,0 +1,43 @@
+{
+  "title": "auth-backend reference sheet",
+  "description": "Forme attendue d'une fiche reference-sheets/auth-backends/*.json",
+  "type": "object",
+  "required": ["framework", "library", "sessionMechanism", "endpoints"],
+  "properties": {
+    "framework": { "type": "string" },
+    "library": { "type": "string" },
+    "docsUrl": { "type": ["string", "null"] },
+    "sessionMechanism": { "type": "string", "enum": ["cookie", "token", "jwt-cookie"] },
+    "csrf": { "type": ["object", "null"] },
+    "endpoints": {
+      "type": "object",
+      "properties": {
+        "login": {
+          "type": "object",
+          "properties": {
+            "method": { "type": ["string", "null"], "enum": ["GET", "POST", "PUT", "DELETE", "PATCH", null] },
+            "path": { "type": ["string", "null"], "pattern": "^/" },
+            "bodyShape": { "type": ["string", "null"] }
+          }
+        },
+        "register": {
+          "type": "object",
+          "properties": {
+            "method": { "type": ["string", "null"], "enum": ["GET", "POST", "PUT", "DELETE", "PATCH", null] },
+            "path": { "type": ["string", "null"], "pattern": "^/" },
+            "bodyShape": { "type": ["string", "null"] }
+          }
+        },
+        "logout": {
+          "type": "object",
+          "properties": {
+            "method": { "type": ["string", "null"], "enum": ["GET", "POST", "PUT", "DELETE", "PATCH", null] },
+            "path": { "type": ["string", "null"], "pattern": "^/" },
+            "bodyShape": { "type": ["string", "null"] }
+          }
+        }
+      }
+    },
+    "notes": { "type": ["string", "null"] }
+  }
+}

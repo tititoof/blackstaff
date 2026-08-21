@@ -1,0 +1,92 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "CrudContract",
+  "type": "object",
+  "required": [
+    "resource",
+    "resourcePlural",
+    "apiBaseUrl",
+    "composableName",
+    "fields",
+    "nuxtVersion",
+    "backend"
+  ],
+  "properties": {
+    "resource": {
+      "type": "string",
+      "description": "Nom singulier, ex: Article"
+    },
+    "resourcePlural": {
+      "type": "string",
+      "description": "ex: articles"
+    },
+    "apiBaseUrl": {
+      "type": "string",
+      "description": "ex: /api/articles, jamais un chemin de fichier"
+    },
+    "composableName": {
+      "type": "string",
+      "description": "ex: useArticles"
+    },
+    "typeName": {
+      "type": "string"
+    },
+    "fields": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "name",
+          "type"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "nuxtVersion": {
+      "type": "integer",
+      "enum": [
+        3,
+        4
+      ]
+    },
+    "responseFormat": {
+      "type": "string"
+    },
+    "errorFormat": {
+      "type": "string"
+    },
+    "paginationParam": {
+      "type": "string"
+    },
+    "backend": {
+      "type": "object",
+      "required": [
+        "kind",
+        "baseUrl"
+      ],
+      "properties": {
+        "kind": {
+          "type": "string",
+          "description": "Identifiant libre du backend (ex: rails, laravel, symfony, spring, django...) — doit correspondre au préfixe d'une fiche reference-sheets/auth-backends/<kind>-<provider>.json si l'auth est concernée. Pas d'enum fermé : n'importe quel backend est supporté dès qu'une fiche existe."
+        },
+        "baseUrl": {
+          "type": "string"
+        }
+      }
+    },
+    "auth": {
+      "$ref": "auth-contract.schema.json"
+    },
+    "backendResourcePath": {
+      "type": "string",
+      "description": "Chemin de la ressource chez le backend, ex: /articles"
+    }
+  }
+}

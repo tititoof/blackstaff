@@ -1,0 +1,18 @@
+{
+  "framework": "laravel",
+  "library": "sanctum",
+  "docsUrl": "https://laravel.com/docs/sanctum",
+  "sessionMechanism": "cookie",
+  "csrf": {
+    "required": true,
+    "fetchEndpoint": "/sanctum/csrf-cookie",
+    "cookieName": "XSRF-TOKEN",
+    "headerName": "X-XSRF-TOKEN"
+  },
+  "endpoints": {
+    "login":    { "method": "POST", "path": "/login", "bodyShape": "{ email, password }" },
+    "register": { "method": "POST", "path": "/register", "bodyShape": "{ name, email, password, password_confirmation }" },
+    "logout":   { "method": "POST", "path": "/logout", "bodyShape": null }
+  },
+  "notes": "OBLIGATOIRE : faire GET /sanctum/csrf-cookie AVANT tout appel login/register, sinon 419 CSRF token mismatch. Le domaine frontend doit être déclaré dans SANCTUM_STATEFUL_DOMAINS côté Laravel. Routes /login, /register, /logout sont celles d'un projet Laravel standard (Breeze/Fortify) — si le projet définit ses propres routes, ajuster."
+}

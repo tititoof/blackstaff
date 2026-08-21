@@ -1,0 +1,9 @@
+[
+  { "sheetType": "library", "sheetKey": "zod", "docsUrl": "https://zod.dev/llms.txt" },
+  { "sheetType": "library", "sheetKey": "nuxt-auth-utils", "docsUrl": "https://raw.githubusercontent.com/atinux/nuxt-auth-utils/main/README.md" },
+  { "sheetType": "auth-backend", "sheetKey": "rails-devise", "docsUrl": "https://raw.githubusercontent.com/heartcombo/devise/main/README.md" },
+  { "sheetType": "ui-component", "sheetKey": "VBtn", "uiLibrary": "vuetify", "libraryVersion": "3" },
+  { "sheetType": "ui-component", "sheetKey": "VTextField", "uiLibrary": "vuetify", "libraryVersion": "3" },
+  { "sheetType": "ui-component", "sheetKey": "VForm", "uiLibrary": "vuetify", "libraryVersion": "3" },
+  { "sheetType": "ui-component", "sheetKey": "VDataTable", "uiLibrary": "vuetify", "libraryVersion": "3" }
+]

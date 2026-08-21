@@ -1,0 +1,76 @@
+{
+  "displayName": "Zod",
+  "url": "https://zod.dev/llms.txt",
+  "exports": [
+    {
+      "name": "z",
+      "side": "server",
+      "note": "The main entry point for creating Zod schemas."
+    },
+    {
+      "name": "string",
+      "side": "server",
+      "note": "Creates a schema for strings with various validation options."
+    },
+    {
+      "name": "number",
+      "side": "server",
+      "note": "Creates a schema for numbers with various validation options."
+    },
+    {
+      "name": "boolean",
+      "side": "server",
+      "note": "Creates a schema for booleans."
+    },
+    {
+      "name": "date",
+      "side": "server",
+      "note": "Creates a schema for dates."
+    },
+    {
+      "name": "array",
+      "side": "server",
+      "note": "Creates a schema for arrays with validation options."
+    },
+    {
+      "name": "object",
+      "side": "server",
+      "note": "Creates a schema for objects with validation options."
+    },
+    {
+      "name": "union",
+      "side": "server",
+      "note": "Creates a schema that can be one of several types."
+    },
+    {
+      "name": "intersection",
+      "side": "server",
+      "note": "Creates a schema that combines multiple schemas into one."
+    },
+    {
+      "name": "refine",
+      "side": "server",
+      "note": "Adds custom validation logic to a schema."
+    },
+    {
+      "name": "transform",
+      "side": "server",
+      "note": "Applies transformations to the output of a schema."
+    },
+    {
+      "name": "preprocess",
+      "side": "server",
+      "note": "Applies preprocessing functions to input data before validation."
+    },
+    {
+      "name": "default",
+      "side": "server",
+      "note": "Sets default values for fields in a schema."
+    },
+    {
+      "name": "catch",
+      "side": "server",
+      "note": "Handles errors during parsing with custom logic."
+    }
+  ]
+}

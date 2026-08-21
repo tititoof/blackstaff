@@ -1,0 +1,22 @@
+{
+  "title": "library reference sheet",
+  "description": "Forme attendue d'une fiche reference-sheets/libraries/*.json",
+  "type": "object",
+  "required": ["displayName", "exports"],
+  "properties": {
+    "displayName": { "type": "string" },
+    "url": { "type": ["string", "null"] },
+    "exports": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name"],
+        "properties": {
+          "name": { "type": "string", "pattern": "^[A-Za-z_$][A-Za-z0-9_$]*$" },
+          "side": { "type": ["string", "null"], "enum": ["server", "client", null] },
+          "note": { "type": ["string", "null"] }
+        }
+      }
+    }
+  }
+}

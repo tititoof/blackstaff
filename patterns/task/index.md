@@ -16,8 +16,9 @@ par un plan Blackstaff Thinking, qui définit les fichiers à créer.
   mêmes conventions de nommage et d'organisation de fichiers que ce pattern,
   même si sa recipe n'est pas chargée automatiquement ici.
 - Un fichier = une responsabilité claire. Pas de fichier fourre-tout.
-- Toujours accompagner le code de test(s) correspondant(s), sauf si la tâche
-  précise explicitement le contraire.
+- Les tests ne font PAS partie de ce plan initial — ils sont générés dans une
+  étape séparée, après coup, sur la base du code réellement écrit (jamais
+  deviné à l'avance sur un plan). Ne liste aucun fichier de test ici.
 - Aucun placeholder, aucun TODO dans le code livré — le code doit être
   directement exécutable.
 
@@ -26,4 +27,3 @@ par un plan Blackstaff Thinking, qui définit les fichiers à créer.
 - Pas de recipe frontend/backend prédéfinie (contrairement à `auth`/`crud`).
 - Pas de liste figée de fichiers — c'est le plan Thinking (`implementationOrder`)
   ou la description de tâche qui fait foi.
-EOF

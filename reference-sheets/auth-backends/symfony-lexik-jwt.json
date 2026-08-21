@@ -1,0 +1,13 @@
+{
+  "framework": "symfony",
+  "library": "lexik-jwt",
+  "docsUrl": "https://github.com/lexik/LexikJWTAuthenticationBundle",
+  "sessionMechanism": "token",
+  "csrf": null,
+  "endpoints": {
+    "login":    { "method": "POST", "path": "/api/login_check", "bodyShape": "{ username, password }" },
+    "register": { "method": "POST", "path": "/api/register", "bodyShape": "dépend de l'implémentation projet — à vérifier dans le contrôleur" },
+    "logout":   { "method": null, "path": null, "bodyShape": "stateless — pas de logout serveur, le client supprime simplement le token stocké" }
+  },
+  "notes": "check_path configurable (lexik_jwt_authentication.check_path). Réponse succès : { token: '<jwt>' } en JSON, PAS un cookie par défaut. Si le bundle est configuré en mode 'HttpOnly cookie' (JWTCookieBundle ou custom success handler), sessionMechanism devient 'jwt-cookie' — ajuster cette fiche si c'est le cas sur le projet. En mode token brut, le endpoint Nuxt doit stocker le JWT reçu dans la session nuxt-auth-utils (setUserSession) et le renvoyer en Authorization: Bearer <token> sur les appels backend suivants."
+}

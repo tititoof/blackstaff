@@ -1,0 +1,13 @@
+{
+  "framework": "symfony",
+  "library": "json_login",
+  "docsUrl": "https://symfony.com/doc/current/security/json_login_setup.html",
+  "sessionMechanism": "cookie",
+  "csrf": null,
+  "endpoints": {
+    "login":    { "method": "POST", "path": "/api/login", "bodyShape": "{ username, password } (Content-Type: application/json — noms configurables via username_path/password_path dans security.yaml)" },
+    "register": { "method": "POST", "path": "/api/register", "bodyShape": "dépend de l'implémentation projet — Symfony n'a pas de convention d'inscription intégrée comme Devise/Sanctum, à vérifier dans le contrôleur du projet" },
+    "logout":   { "method": "GET", "path": "/logout", "bodyShape": null }
+  },
+  "notes": "check_path/le chemin de login est configurable dans firewalls.<nom>.json_login.check_path (security.yaml) — vérifier la config réelle du projet avant de générer. 401 JSON standard si identifiants invalides. Pas de CSRF requis pour json_login par défaut (contrairement au form_login classique)."
+}

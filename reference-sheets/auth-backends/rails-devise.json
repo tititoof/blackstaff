@@ -1,0 +1,13 @@
+{
+  "framework": "rails",
+  "library": "devise",
+  "docsUrl": "https://github.com/heartcombo/devise",
+  "sessionMechanism": "cookie",
+  "csrf": null,
+  "endpoints": {
+    "login":    { "method": "POST", "path": "/users/sign_in", "bodyShape": "{ user: { email, password } }" },
+    "register": { "method": "POST", "path": "/users", "bodyShape": "{ user: { email, password, password_confirmation, ...autres champs } }" },
+    "logout":   { "method": "DELETE", "path": "/users/sign_out", "bodyShape": null }
+  },
+  "notes": "Session par cookie Rails standard. La réponse porte le cookie dans Set-Cookie — le proxy Nuxt doit le lire et le retransmettre/stocker. Routes par défaut du generator Devise ; si le projet utilise des routes personnalisées (config/routes.rb), les ajuster ici."
+}

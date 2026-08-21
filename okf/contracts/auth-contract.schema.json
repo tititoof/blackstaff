@@ -1,0 +1,40 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "AuthContract",
+  "type": "object",
+  "required": [
+    "authStrategy"
+  ],
+  "properties": {
+    "authStrategy": {
+      "type": "string",
+      "enum": [
+        "devise-jwt",
+        "devise-token-auth",
+        "devise-session-csrf",
+        "sanctum",
+        "symfony-json-login",
+        "symfony-lexik-jwt"
+      ],
+      "description": "Doit correspondre au sheetKey de reference-sheets/auth-backends/<framework>-<provider>.json"
+    },
+    "tokenSessionKey": {
+      "type": "string",
+      "description": "clé sous laquelle le token est stocké dans setUserSession, ex: railsToken"
+    },
+    "tokenHeaderName": {
+      "type": "string",
+      "default": "Authorization"
+    },
+    "sessionUserFields": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "loginBackendPath": {
+      "type": "string",
+      "description": "Chemin exact chez le backend (voir reference-sheets/auth-backends/*.json > endpoints.login.path)"
+    }
+  }
+}
