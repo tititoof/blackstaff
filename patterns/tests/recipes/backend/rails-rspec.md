@@ -23,6 +23,9 @@ title: Specs RSpec (Rails 8, rubocop-rails-omakase)
 6. **Dates** : une date fixe `let(:today) { Date.new(2026, 9, 30) }` passée en `today:` ; des dates
    explicites (`Date.new(...)`, `Time.zone.local(2026, 9, 28, 12)`) ; jamais d'arithmétique de mois
    pour calculer une valeur attendue (`today - 3.months` → 30 ou 31 jours selon le mois).
+   **Pas de `travel_to` / `freeze_time` / `travel_back`** : les helpers de temps ne sont pas inclus
+   dans `rails_helper` (→ `NoMethodError`). Pour un horodatage « maintenant », comparer avec
+   `be_within(1.second).of(Time.current)`.
 7. **Requêtes** : `let(:user) { create(:user, :confirmed) }`, `let(:headers) { authentication_headers_for(user) }`,
    `get "/api/v1/...", headers: headers, as: :json`, puis `parsed_body[:cle]` (clés symboles) ;
    tester aussi `401` sans headers.
