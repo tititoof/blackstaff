@@ -1,0 +1,65 @@
+{
+ "displayName": "SalesExerciseGrading::Client",
+ "clientFile": "app/clients/sales_exercise_grading/client.rb",
+ "baseUrlInTests": "https://sales-exercise-grading-test.example/",
+ "source": "recorded from the passing specs of the repository at develop (WebMock stubs written by the team, checked against the real client code); not live responses",
+ "specs": [
+  "spec/clients/sales_exercise_grading/client_spec.rb",
+  "spec/requests/api/v1/sales_course/exercise_attempts_spec.rb",
+  "spec/services/sales_course/exercise_attempts/create_service_spec.rb"
+ ],
+ "endpoints": [
+  {
+   "method": "POST",
+   "path": "/",
+   "clientMethods": [
+    "grade"
+   ],
+   "queryParams": [],
+   "requestBodySamples": [
+    "{\"exercise\":{\"prompt\":\"Écris un email\",\"grading_rubric\":\"...\"},\"answer_text\":\"Bonjour\"}",
+    "{}"
+   ],
+   "responses": [
+    {
+     "status": 200,
+     "contentType": "application/json",
+     "bodySample": "{\"score\":85,\"passed\":true,\"feedback\":\"Bien joué\",\"strengths\":[\"Clair\"],\"improvements\":[\"Raccourcir\"]}"
+    },
+    {
+     "status": 200,
+     "contentType": "application/json",
+     "bodySample": "{\"score\":85,\"passed\":true,\"feedback\":\"Bien joué\",\"strengths\":[],\"improvements\":[]}"
+    },
+    {
+     "status": 200,
+     "contentType": "application/json",
+     "bodySample": "{\"score\":85,\"passed\":true,\"feedback\":\"Bien joué\",\"strengths\":[\"Clair\"],\"improvements\":[]}"
+    },
+    {
+     "status": 500,
+     "contentType": null,
+     "bodySample": "boom"
+    }
+   ]
+  }
+ ],
+ "clientMethods": [
+  {
+   "name": "grade",
+   "returns": [
+    {
+     "class": "Hash",
+     "sample": "{\"score\"=>85, \"passed\"=>true, \"feedback\"=>\"Bien joué\", \"strengths\"=>[\"Clair\"], \"improvements\"=>[\"Raccourcir\"]}"
+    }
+   ],
+   "raises": [
+    {
+     "error": "ApplicationClient::Error",
+     "status": 500,
+     "messageSample": "500: boom"
+    }
+   ]
+  }
+ ]
+}

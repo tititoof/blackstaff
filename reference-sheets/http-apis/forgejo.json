@@ -1,0 +1,280 @@
+{
+ "displayName": "Forgejo::Client",
+ "clientFile": "app/clients/forgejo/client.rb",
+ "baseUrlInTests": "http://forgejo-test.example/",
+ "source": "recorded from the passing specs of the repository at develop (WebMock stubs written by the team, checked against the real client code); not live responses",
+ "specs": [
+  "spec/clients/forgejo/client_spec.rb",
+  "spec/procedures/projects/create_procedure_spec.rb",
+  "spec/requests/api/v1/cicd_stack_spec.rb",
+  "spec/requests/api/v1/projects_spec.rb",
+  "spec/services/cicd_stack/generate_client_repository_service_spec.rb",
+  "spec/services/forgejo/sync_issues_service_spec.rb",
+  "spec/services/projects/provision_repositories_service_spec.rb"
+ ],
+ "endpoints": [
+  {
+   "method": "GET",
+   "path": "/api/v1/repos/other-owner/missing-repo",
+   "clientMethods": [
+    "repository"
+   ],
+   "queryParams": [],
+   "requestBodySamples": [],
+   "responses": [
+    {
+     "status": 404,
+     "contentType": null,
+     "bodySample": "{\"message\":\"not found\"}"
+    }
+   ]
+  },
+  {
+   "method": "GET",
+   "path": "/api/v1/repos/other-owner/other-repo",
+   "clientMethods": [
+    "repository"
+   ],
+   "queryParams": [],
+   "requestBodySamples": [],
+   "responses": [
+    {
+     "status": 200,
+     "contentType": "application/json",
+     "bodySample": "{\"id\":1,\"full_name\":\"other-owner/other-repo\"}"
+    }
+   ]
+  },
+  {
+   "method": "GET",
+   "path": "/api/v1/repos/other-owner/other-repo/issues",
+   "clientMethods": [
+    "issues"
+   ],
+   "queryParams": [
+    "limit",
+    "state"
+   ],
+   "requestBodySamples": [],
+   "responses": [
+    {
+     "status": 200,
+     "contentType": "application/json",
+     "bodySample": "[]"
+    }
+   ]
+  },
+  {
+   "method": "GET",
+   "path": "/api/v1/repos/test-owner/test-repo/issues",
+   "clientMethods": [
+    "issues"
+   ],
+   "queryParams": [
+    "limit",
+    "state"
+   ],
+   "requestBodySamples": [],
+   "responses": [
+    {
+     "status": 200,
+     "contentType": "application/json",
+     "bodySample": "[{\"id\":1,\"number\":42,\"title\":\"Bug\",\"state\":\"open\"}]"
+    },
+    {
+     "status": 200,
+     "contentType": "application/json",
+     "bodySample": "[{\"id\":1,\"number\":1,\"title\":\"A bug\",\"state\":\"open\",\"repository\":{\"full_name\":\"test-owner/test-repo\"}},{\"id\":2,\"number\":2,\"title\":\"A PR\",\"state\":\"closed\",\"pull_request\":{\"merged\":true},\"repository\":{\"full_name\":\"test-owner/test-repo\"}}]"
+    },
+    {
+     "status": 401,
+     "contentType": null,
+     "bodySample": "{\"message\":\"bad token\"}"
+    },
+    {
+     "status": 500,
+     "contentType": null,
+     "bodySample": "boom"
+    }
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/api/v1/orgs/some-org/repos",
+   "clientMethods": [
+    "create_repository"
+   ],
+   "queryParams": [],
+   "requestBodySamples": [
+    "{\"name\":\"new-repo\",\"private\":true,\"auto_init\":true}"
+   ],
+   "responses": [
+    {
+     "status": 201,
+     "contentType": "application/json",
+     "bodySample": "{\"id\":2,\"full_name\":\"some-org/new-repo\"}"
+    }
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/api/v1/repos/test-owner/cicd-stack/generate",
+   "clientMethods": [
+    "generate_from_template"
+   ],
+   "queryParams": [],
+   "requestBodySamples": [
+    "{\"name\":\"cicd-stack-acme\",\"owner\":\"test-owner\",\"description\":\"For Acme\",\"private\":true,\"git_content\":true}"
+   ],
+   "responses": [
+    {
+     "status": 201,
+     "contentType": "application/json",
+     "bodySample": "{\"id\":3,\"name\":\"cicd-stack-acme\",\"html_url\":\"https://forgejo-test.example/test-owner/cicd-stack-acme\"}"
+    },
+    {
+     "status": 201,
+     "contentType": "application/json",
+     "bodySample": "{\"name\":\"cicd-stack-acme-corp\",\"html_url\":\"https://forgejo-test.example/test-owner/cicd-stack-acme-corp\",\"clone_url\":\"https://forgejo-test.example/test-owner/cicd-stack-acme-corp.git\"}"
+    },
+    {
+     "status": 500,
+     "contentType": null,
+     "bodySample": "boom"
+    }
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/api/v1/repos/test-owner/missing-template/generate",
+   "clientMethods": [
+    "generate_from_template"
+   ],
+   "queryParams": [],
+   "requestBodySamples": [
+    "{\"name\":\"x\",\"owner\":\"test-owner\",\"description\":null,\"private\":true,\"git_content\":true}"
+   ],
+   "responses": [
+    {
+     "status": 404,
+     "contentType": null,
+     "bodySample": "{\"message\":\"not found\"}"
+    }
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/api/v1/user/repos",
+   "clientMethods": [
+    "create_repository"
+   ],
+   "queryParams": [],
+   "requestBodySamples": [
+    "{\"name\":\"new-repo\",\"private\":true,\"auto_init\":true}"
+   ],
+   "responses": [
+    {
+     "status": 201,
+     "contentType": "application/json",
+     "bodySample": "{\"id\":1,\"full_name\":\"test-owner/new-repo\"}"
+    },
+    {
+     "status": 201,
+     "contentType": "application/json",
+     "bodySample": "{\"id\":1}"
+    },
+    {
+     "status": 409,
+     "contentType": null,
+     "bodySample": "{\"message\":\"repo already exists\"}"
+    },
+    {
+     "status": 500,
+     "contentType": null,
+     "bodySample": "boom"
+    }
+   ]
+  }
+ ],
+ "clientMethods": [
+  {
+   "name": "create_repository",
+   "returns": [
+    {
+     "class": "Hash",
+     "sample": "{\"id\"=>1, \"full_name\"=>\"test-owner/new-repo\"}"
+    }
+   ],
+   "raises": [
+    {
+     "error": "ApplicationClient::Error",
+     "status": 409,
+     "messageSample": "409: {\"message\":\"repo already exists\"}"
+    },
+    {
+     "error": "ApplicationClient::Error",
+     "status": 500,
+     "messageSample": "500: boom"
+    }
+   ]
+  },
+  {
+   "name": "generate_from_template",
+   "returns": [
+    {
+     "class": "Hash",
+     "sample": "{\"id\"=>3, \"name\"=>\"cicd-stack-acme\", \"html_url\"=>\"https://forgejo-test.example/test-owner/cicd-stack-acme\"}"
+    }
+   ],
+   "raises": [
+    {
+     "error": "ApplicationClient::Error",
+     "status": 404,
+     "messageSample": "404: {\"message\":\"not found\"}"
+    },
+    {
+     "error": "ApplicationClient::Error",
+     "status": 500,
+     "messageSample": "500: boom"
+    }
+   ]
+  },
+  {
+   "name": "issues",
+   "returns": [
+    {
+     "class": "Array",
+     "sample": "[{\"id\"=>1, \"number\"=>42, \"title\"=>\"Bug\", \"state\"=>\"open\"}]"
+    }
+   ],
+   "raises": [
+    {
+     "error": "ApplicationClient::Error",
+     "status": 401,
+     "messageSample": "401: {\"message\":\"bad token\"}"
+    },
+    {
+     "error": "ApplicationClient::Error",
+     "status": 500,
+     "messageSample": "500: boom"
+    }
+   ]
+  },
+  {
+   "name": "repository",
+   "returns": [
+    {
+     "class": "Hash",
+     "sample": "{\"id\"=>1, \"full_name\"=>\"other-owner/other-repo\"}"
+    }
+   ],
+   "raises": [
+    {
+     "error": "ApplicationClient::Error",
+     "status": 404,
+     "messageSample": "404: {\"message\":\"not found\"}"
+    }
+   ]
+  }
+ ]
+}

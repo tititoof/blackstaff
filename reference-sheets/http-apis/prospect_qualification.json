@@ -1,0 +1,55 @@
+{
+ "displayName": "ProspectQualification::Client",
+ "clientFile": "app/clients/prospect_qualification/client.rb",
+ "baseUrlInTests": "http://prospect-qualification-test.example/",
+ "source": "recorded from the passing specs of the repository at develop (WebMock stubs written by the team, checked against the real client code); not live responses",
+ "specs": [
+  "spec/clients/prospect_qualification/client_spec.rb",
+  "spec/requests/api/v1/prospects_spec.rb",
+  "spec/services/prospects/qualification_service_spec.rb"
+ ],
+ "endpoints": [
+  {
+   "method": "POST",
+   "path": "/",
+   "clientMethods": [
+    "qualify"
+   ],
+   "queryParams": [],
+   "requestBodySamples": [
+    "{\"name\":\"Acme\",\"stage\":\"contacted\",\"client_count\":5}",
+    "{\"name\":\"Acme\"}"
+   ],
+   "responses": [
+    {
+     "status": 200,
+     "contentType": "application/json",
+     "bodySample": "{\"suggested_draft_type\":\"cicd\",\"probability\":45,\"potential_amount_suggested\":8000,\"potential_amount_min\":5000,\"potential_amount_max\":12000,\"rationale\":\"...\"}"
+    },
+    {
+     "status": 500,
+     "contentType": null,
+     "bodySample": "boom"
+    }
+   ]
+  }
+ ],
+ "clientMethods": [
+  {
+   "name": "qualify",
+   "returns": [
+    {
+     "class": "Hash",
+     "sample": "{\"suggested_draft_type\"=>\"cicd\", \"probability\"=>45, \"potential_amount_suggested\"=>8000, \"potential_amount_min\"=>5000, \"potential_amount_max\"=>12000, \"rationale\"=>\"...\"}"
+    }
+   ],
+   "raises": [
+    {
+     "error": "ApplicationClient::Error",
+     "status": 500,
+     "messageSample": "500: boom"
+    }
+   ]
+  }
+ ]
+}

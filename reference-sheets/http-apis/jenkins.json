@@ -1,0 +1,139 @@
+{
+ "displayName": "Jenkins::Client",
+ "clientFile": "app/clients/jenkins/client.rb",
+ "baseUrlInTests": "http://jenkins-test.example/",
+ "source": "recorded from the passing specs of the repository at develop (WebMock stubs written by the team, checked against the real client code); not live responses",
+ "specs": [
+  "spec/clients/jenkins/client_spec.rb",
+  "spec/requests/api/v1/jenkins_spec.rb",
+  "spec/services/jenkins/sync_jobs_service_spec.rb"
+ ],
+ "endpoints": [
+  {
+   "method": "GET",
+   "path": "/api/json",
+   "clientMethods": [
+    "jobs"
+   ],
+   "queryParams": [
+    "tree"
+   ],
+   "requestBodySamples": [],
+   "responses": [
+    {
+     "status": 200,
+     "contentType": "application/json",
+     "bodySample": "{\"jobs\":[{\"name\":\"chartman2-fr\",\"url\":\"https://jenkins.chartman2-fr.ovh/job/chartman2-fr/\",\"jobs\":[{\"name\":\"candlekeep-backend\",\"url\":\"https://jenkins.chartman2-fr.ovh/job/chartman2-fr/job/candlekeep-backend/\",\"jobs\":[{\"name\":\"develop\",\"url\":\"https://jenkins.chartman2-fr.ovh/job/chartman2-fr/job/candlekeep-backend/job/develop/\",\"color\":\"blue\",\"lastBuild\":{\"number\":30,\"result\":\"SUCCESS\",\"timestamp\":1735000000000}},{\"name\":\"feature%2Ftask-1\",\"url\":\"https://jenkins.chartman2-fr.ovh/job/chartman2-fr"
+    },
+    {
+     "status": 401,
+     "contentType": null,
+     "bodySample": "Unauthorized"
+    },
+    {
+     "status": 500,
+     "contentType": null,
+     "bodySample": "boom"
+    }
+   ]
+  },
+  {
+   "method": "GET",
+   "path": "/job/chartman2-fr/job/candlekeep-backend/job/develop/api/json",
+   "clientMethods": [
+    "builds"
+   ],
+   "queryParams": [
+    "tree"
+   ],
+   "requestBodySamples": [],
+   "responses": [
+    {
+     "status": 200,
+     "contentType": "application/json",
+     "bodySample": "{\"builds\":[{\"number\":30,\"result\":\"SUCCESS\",\"timestamp\":1735000000000}]}"
+    },
+    {
+     "status": 200,
+     "contentType": "application/json",
+     "bodySample": "{\"builds\":[{\"number\":30,\"result\":\"SUCCESS\",\"timestamp\":1735000000000,\"duration\":60000}]}"
+    },
+    {
+     "status": 200,
+     "contentType": "application/json",
+     "bodySample": "{\"builds\":[]}"
+    }
+   ]
+  },
+  {
+   "method": "GET",
+   "path": "/job/chartman2-fr/job/candlekeep-backend/job/develop/{id}/wfapi/describe",
+   "clientMethods": [
+    "build_stages"
+   ],
+   "queryParams": [],
+   "requestBodySamples": [],
+   "responses": [
+    {
+     "status": 200,
+     "contentType": "application/json",
+     "bodySample": "{\"stages\":[{\"id\":\"6\",\"name\":\"Build\",\"status\":\"SUCCESS\",\"durationMillis\":3767}]}"
+    },
+    {
+     "status": 404,
+     "contentType": null,
+     "bodySample": "Not found"
+    }
+   ]
+  }
+ ],
+ "clientMethods": [
+  {
+   "name": "build_stages",
+   "returns": [
+    {
+     "class": "Array",
+     "sample": "[{\"id\"=>\"6\", \"name\"=>\"Build\", \"status\"=>\"SUCCESS\", \"durationMillis\"=>3767}]"
+    }
+   ],
+   "raises": [
+    {
+     "error": "ApplicationClient::Error",
+     "status": 404,
+     "messageSample": "404: Not found"
+    }
+   ]
+  },
+  {
+   "name": "builds",
+   "returns": [
+    {
+     "class": "Array",
+     "sample": "[{\"number\"=>30, \"result\"=>\"SUCCESS\", \"timestamp\"=>1735000000000}]"
+    }
+   ],
+   "raises": []
+  },
+  {
+   "name": "jobs",
+   "returns": [
+    {
+     "class": "Array",
+     "sample": "[{\"name\"=>\"candlekeep-backend/develop\", \"url\"=>\"https://jenkins.chartman2-fr.ovh/job/chartman2-fr/job/candlekeep-backend/job/develop/\", \"color\"=>\"blue\", \"lastBuild\"=>{\"number\"=>30, \"result\"=>\"SUCCESS\", \"timestamp\"=>1735000000000}}, {\"name\"=>\"candlekeep-backend/feature/task-1\", \"url\"=>\"https://jenkin"
+    }
+   ],
+   "raises": [
+    {
+     "error": "ApplicationClient::Error",
+     "status": 401,
+     "messageSample": "401: Unauthorized"
+    },
+    {
+     "error": "ApplicationClient::Error",
+     "status": 500,
+     "messageSample": "500: boom"
+    }
+   ]
+  }
+ ]
+}

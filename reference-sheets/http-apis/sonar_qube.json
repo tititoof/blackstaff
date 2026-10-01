@@ -1,0 +1,197 @@
+{
+ "displayName": "SonarQube::Client",
+ "clientFile": "app/clients/sonar_qube/client.rb",
+ "baseUrlInTests": "http://sonarqube-test.example/",
+ "source": "recorded from the passing specs of the repository at develop (WebMock stubs written by the team, checked against the real client code); not live responses",
+ "specs": [
+  "spec/clients/sonar_qube/client_spec.rb",
+  "spec/jobs/sonar_qube_provision_projects_job_spec.rb",
+  "spec/requests/api/v1/sonar_qube_spec.rb",
+  "spec/services/sonar_qube/sync_projects_service_spec.rb"
+ ],
+ "endpoints": [
+  {
+   "method": "GET",
+   "path": "/api/components/search",
+   "clientMethods": [
+    "projects"
+   ],
+   "queryParams": [
+    "qualifiers"
+   ],
+   "requestBodySamples": [],
+   "responses": [
+    {
+     "status": 200,
+     "contentType": "application/json",
+     "bodySample": "{\"components\":[{\"key\":\"candlekeep-backend\",\"name\":\"candlekeep-backend\"}]}"
+    },
+    {
+     "status": 500,
+     "contentType": null,
+     "bodySample": "boom"
+    }
+   ]
+  },
+  {
+   "method": "GET",
+   "path": "/api/measures/component",
+   "clientMethods": [
+    "measures"
+   ],
+   "queryParams": [
+    "component",
+    "metricKeys"
+   ],
+   "requestBodySamples": [],
+   "responses": [
+    {
+     "status": 200,
+     "contentType": "application/json",
+     "bodySample": "{\"component\":{\"key\":\"candlekeep-backend\",\"measures\":[{\"metric\":\"bugs\",\"value\":\"0\"}]}}"
+    }
+   ]
+  },
+  {
+   "method": "GET",
+   "path": "/api/measures/search_history",
+   "clientMethods": [
+    "measures_history"
+   ],
+   "queryParams": [
+    "component",
+    "metrics"
+   ],
+   "requestBodySamples": [],
+   "responses": [
+    {
+     "status": 200,
+     "contentType": "application/json",
+     "bodySample": "{\"measures\":[{\"metric\":\"coverage\",\"history\":[{\"date\":\"2026-08-26\",\"value\":\"98.9\"}]}]}"
+    },
+    {
+     "status": 500,
+     "contentType": null,
+     "bodySample": "boom"
+    }
+   ]
+  },
+  {
+   "method": "GET",
+   "path": "/api/qualitygates/project_status",
+   "clientMethods": [
+    "quality_gate_status"
+   ],
+   "queryParams": [
+    "projectKey"
+   ],
+   "requestBodySamples": [],
+   "responses": [
+    {
+     "status": 200,
+     "contentType": "application/json",
+     "bodySample": "{\"projectStatus\":{\"status\":\"OK\"}}"
+    }
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/api/projects/create",
+   "clientMethods": [
+    "create_project"
+   ],
+   "queryParams": [
+    "name",
+    "project"
+   ],
+   "requestBodySamples": [],
+   "responses": [
+    {
+     "status": 200,
+     "contentType": "application/json",
+     "bodySample": "{\"project\":{\"key\":\"acme-main\",\"name\":\"acme (main)\",\"qualifier\":\"TRK\"}}"
+    },
+    {
+     "status": 200,
+     "contentType": "application/json",
+     "bodySample": "{\"project\":{\"key\":\"toofytroll-frontend-main\"}}"
+    },
+    {
+     "status": 400,
+     "contentType": null,
+     "bodySample": "{\"errors\":[{\"msg\":\"boom\"}]}"
+    }
+   ]
+  }
+ ],
+ "clientMethods": [
+  {
+   "name": "create_project",
+   "returns": [
+    {
+     "class": "Hash",
+     "sample": "{\"project\"=>{\"key\"=>\"acme-main\", \"name\"=>\"acme (main)\", \"qualifier\"=>\"TRK\"}}"
+    }
+   ],
+   "raises": [
+    {
+     "error": "ApplicationClient::Error",
+     "status": 400,
+     "messageSample": "400: {\"errors\":[{\"msg\":\"boom\"}]}"
+    }
+   ]
+  },
+  {
+   "name": "measures",
+   "returns": [
+    {
+     "class": "Hash",
+     "sample": "{\"key\"=>\"candlekeep-backend\", \"measures\"=>[{\"metric\"=>\"bugs\", \"value\"=>\"0\"}]}"
+    }
+   ],
+   "raises": []
+  },
+  {
+   "name": "measures_history",
+   "returns": [
+    {
+     "class": "Array",
+     "sample": "[{\"date\"=>\"2026-08-26\", \"value\"=>\"98.9\"}]"
+    }
+   ],
+   "raises": [
+    {
+     "error": "ApplicationClient::Error",
+     "status": 500,
+     "messageSample": "500: boom"
+    }
+   ]
+  },
+  {
+   "name": "projects",
+   "returns": [
+    {
+     "class": "Array",
+     "sample": "[{\"key\"=>\"candlekeep-backend\", \"name\"=>\"candlekeep-backend\"}]"
+    }
+   ],
+   "raises": [
+    {
+     "error": "ApplicationClient::Error",
+     "status": 500,
+     "messageSample": "500: boom"
+    }
+   ]
+  },
+  {
+   "name": "quality_gate_status",
+   "returns": [
+    {
+     "class": "String",
+     "sample": "\"OK\""
+    }
+   ],
+   "raises": []
+  }
+ ]
+}

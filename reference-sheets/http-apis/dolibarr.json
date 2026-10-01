@@ -1,0 +1,236 @@
+{
+ "displayName": "Dolibarr::Client",
+ "clientFile": "app/clients/dolibarr/client.rb",
+ "baseUrlInTests": "http://dolibarr-test.example/api/index.php",
+ "source": "recorded from the passing specs of the repository at develop (WebMock stubs written by the team, checked against the real client code); not live responses",
+ "specs": [
+  "spec/clients/dolibarr/client_spec.rb",
+  "spec/requests/api/v1/dolibarr_spec.rb",
+  "spec/requests/api/v1/prospects_spec.rb",
+  "spec/services/dolibarr/push_prospect_service_spec.rb",
+  "spec/services/dolibarr/sync_client_status_service_spec.rb",
+  "spec/services/dolibarr/sync_invoices_service_spec.rb",
+  "spec/services/dolibarr/sync_thirdparties_service_spec.rb",
+  "spec/services/dolibarr/update_thirdparty_service_spec.rb",
+  "spec/services/prospects/create_service_spec.rb",
+  "spec/services/prospects/update_service_spec.rb"
+ ],
+ "endpoints": [
+  {
+   "method": "GET",
+   "path": "/invoices",
+   "clientMethods": [
+    "invoices"
+   ],
+   "queryParams": [
+    "limit"
+   ],
+   "requestBodySamples": [],
+   "responses": [
+    {
+     "status": 200,
+     "contentType": "application/json",
+     "bodySample": "[{\"id\":\"7\",\"ref\":\"FA7\"}]"
+    },
+    {
+     "status": 200,
+     "contentType": "application/json",
+     "bodySample": "[{\"id\":1,\"ref\":\"INV-001\",\"socid\":\"42\",\"statut\":\"1\",\"paye\":\"0\",\"date\":\"1726783200\",\"date_lim_reglement\":\"1729375200\",\"total_ht\":\"100.0\",\"total_ttc\":\"120.0\"},{\"id\":2,\"ref\":\"INV-002\",\"socid\":\"43\",\"statut\":\"2\",\"paye\":\"1\",\"date\":\"1726869600\",\"date_lim_reglement\":\"1729461600\",\"total_ht\":\"200.0\",\"total_ttc\":\"240.0\"}]"
+    },
+    {
+     "status": 500,
+     "contentType": null,
+     "bodySample": "boom"
+    }
+   ]
+  },
+  {
+   "method": "GET",
+   "path": "/invoices/{id}/payments",
+   "clientMethods": [
+    "invoice_payments"
+   ],
+   "queryParams": [],
+   "requestBodySamples": [],
+   "responses": [
+    {
+     "status": 200,
+     "contentType": "application/json",
+     "bodySample": "[{\"date\":\"2024-10-10 12:00:00\",\"amount\":\"1200\"}]"
+    },
+    {
+     "status": 200,
+     "contentType": "application/json",
+     "bodySample": "[{\"date\":\"2024-10-05 00:00:00\"},{\"date\":\"2024-10-10 12:00:00\"}]"
+    }
+   ]
+  },
+  {
+   "method": "GET",
+   "path": "/thirdparties",
+   "clientMethods": [
+    "thirdparties"
+   ],
+   "queryParams": [
+    "limit"
+   ],
+   "requestBodySamples": [],
+   "responses": [
+    {
+     "status": 200,
+     "contentType": "application/json",
+     "bodySample": "[{\"id\":1,\"name\":\"Acme\"}]"
+    },
+    {
+     "status": 200,
+     "contentType": "application/json",
+     "bodySample": "[{\"id\":1,\"name\":\"Acme\",\"client\":1,\"email\":\"acme@example.com\",\"town\":\"Paris\"},{\"id\":2,\"name\":\"Beta\",\"client\":2,\"email\":\"beta@example.com\",\"town\":\"Lyon\"}]"
+    },
+    {
+     "status": 401,
+     "contentType": null,
+     "bodySample": "{\"error\":{\"message\":\"invalid key\"}}"
+    },
+    {
+     "status": 500,
+     "contentType": null,
+     "bodySample": "boom"
+    }
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/thirdparties",
+   "clientMethods": [
+    "create_thirdparty"
+   ],
+   "queryParams": [],
+   "requestBodySamples": [
+    "{\"name\":\"Acme\",\"client\":2}",
+    "{\"name\":\"Acme\"}"
+   ],
+   "responses": [
+    {
+     "status": 200,
+     "contentType": "application/json",
+     "bodySample": "42"
+    },
+    {
+     "status": 500,
+     "contentType": null,
+     "bodySample": "boom"
+    }
+   ]
+  },
+  {
+   "method": "PUT",
+   "path": "/thirdparties/{id}",
+   "clientMethods": [
+    "update_thirdparty"
+   ],
+   "queryParams": [],
+   "requestBodySamples": [
+    "{\"name\":\"Acme\",\"client\":3}",
+    "{\"name\":\"Acme\"}"
+   ],
+   "responses": [
+    {
+     "status": 200,
+     "contentType": "application/json",
+     "bodySample": "{\"id\":\"7\",\"client\":\"3\"}"
+    },
+    {
+     "status": 200,
+     "contentType": "application/json",
+     "bodySample": "{\"id\":\"7\"}"
+    },
+    {
+     "status": 500,
+     "contentType": null,
+     "bodySample": "boom"
+    }
+   ]
+  }
+ ],
+ "clientMethods": [
+  {
+   "name": "create_thirdparty",
+   "returns": [
+    {
+     "class": "Integer",
+     "sample": "42"
+    }
+   ],
+   "raises": [
+    {
+     "error": "ApplicationClient::Error",
+     "status": 500,
+     "messageSample": "500: boom"
+    }
+   ]
+  },
+  {
+   "name": "invoice_payments",
+   "returns": [
+    {
+     "class": "Array",
+     "sample": "[{\"date\"=>\"2024-10-10 12:00:00\", \"amount\"=>\"1200\"}]"
+    }
+   ],
+   "raises": []
+  },
+  {
+   "name": "invoices",
+   "returns": [
+    {
+     "class": "Array",
+     "sample": "[{\"id\"=>\"7\", \"ref\"=>\"FA7\"}]"
+    }
+   ],
+   "raises": [
+    {
+     "error": "ApplicationClient::Error",
+     "status": 500,
+     "messageSample": "500: boom"
+    }
+   ]
+  },
+  {
+   "name": "thirdparties",
+   "returns": [
+    {
+     "class": "Array",
+     "sample": "[{\"id\"=>1, \"name\"=>\"Acme\"}]"
+    }
+   ],
+   "raises": [
+    {
+     "error": "ApplicationClient::Error",
+     "status": 401,
+     "messageSample": "401: {\"error\":{\"message\":\"invalid key\"}}"
+    },
+    {
+     "error": "ApplicationClient::Error",
+     "status": 500,
+     "messageSample": "500: boom"
+    }
+   ]
+  },
+  {
+   "name": "update_thirdparty",
+   "returns": [
+    {
+     "class": "Hash",
+     "sample": "{\"id\"=>\"7\", \"client\"=>\"3\"}"
+    }
+   ],
+   "raises": [
+    {
+     "error": "ApplicationClient::Error",
+     "status": 500,
+     "messageSample": "500: boom"
+    }
+   ]
+  }
+ ]
+}

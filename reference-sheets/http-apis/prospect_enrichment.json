@@ -1,0 +1,55 @@
+{
+ "displayName": "ProspectEnrichment::Client",
+ "clientFile": "app/clients/prospect_enrichment/client.rb",
+ "baseUrlInTests": "http://prospect-enrichment-test.example/",
+ "source": "recorded from the passing specs of the repository at develop (WebMock stubs written by the team, checked against the real client code); not live responses",
+ "specs": [
+  "spec/clients/prospect_enrichment/client_spec.rb",
+  "spec/requests/api/v1/prospects_spec.rb",
+  "spec/services/prospects/enrich_service_spec.rb"
+ ],
+ "endpoints": [
+  {
+   "method": "POST",
+   "path": "/",
+   "clientMethods": [
+    "enrich"
+   ],
+   "queryParams": [],
+   "requestBodySamples": [
+    "{\"name\":\"Acme\",\"city\":\"Lyon\",\"siren\":\"552032534\"}",
+    "{\"name\":\"Acme\",\"city\":\"Lyon\",\"siren\":null}"
+   ],
+   "responses": [
+    {
+     "status": 200,
+     "contentType": "application/json",
+     "bodySample": "{\"website\":\"https://acme.example\",\"phone\":\"01 23 45 67 89\",\"email\":\"\",\"confidence\":\"high\",\"rationale\":\"Found on the official site\"}"
+    },
+    {
+     "status": 500,
+     "contentType": null,
+     "bodySample": "boom"
+    }
+   ]
+  }
+ ],
+ "clientMethods": [
+  {
+   "name": "enrich",
+   "returns": [
+    {
+     "class": "Hash",
+     "sample": "{\"website\"=>\"https://acme.example\", \"phone\"=>\"01 23 45 67 89\", \"email\"=>\"\", \"confidence\"=>\"high\", \"rationale\"=>\"Found on the official site\"}"
+    }
+   ],
+   "raises": [
+    {
+     "error": "ApplicationClient::Error",
+     "status": 500,
+     "messageSample": "500: boom"
+    }
+   ]
+  }
+ ]
+}

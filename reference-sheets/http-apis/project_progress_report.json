@@ -1,0 +1,59 @@
+{
+ "displayName": "ProjectProgressReport::Client",
+ "clientFile": "app/clients/project_progress_report/client.rb",
+ "baseUrlInTests": "http://project-progress-report-test.example/webhook/candlekeep-progress-report-narrative",
+ "source": "recorded from the passing specs of the repository at develop (WebMock stubs written by the team, checked against the real client code); not live responses",
+ "specs": [
+  "spec/clients/project_progress_report/client_spec.rb",
+  "spec/services/projects/reports/build_progress_report_service_spec.rb"
+ ],
+ "endpoints": [
+  {
+   "method": "POST",
+   "path": "/",
+   "clientMethods": [
+    "narrate"
+   ],
+   "queryParams": [],
+   "requestBodySamples": [
+    "{\"project\":{\"name\":\"Candlekeep\"},\"period\":{\"start\":\"2026-08-01\",\"end\":\"2026-08-26\"}}",
+    "{}"
+   ],
+   "responses": [
+    {
+     "status": 200,
+     "contentType": "application/json",
+     "bodySample": "{\"executive_summary\":{\"achievements\":\"...\"}}"
+    },
+    {
+     "status": 200,
+     "contentType": "application/json",
+     "bodySample": "{\"executive_summary\":{\"achievements\":\"...\",\"overall_progress\":\"...\",\"attention_points\":\"...\"},\"work_done\":{\"new_features\":\"...\",\"evolutions\":\"...\",\"bug_fixes\":\"...\",\"technical_improvements\":\"...\"},\"quality_reliability\":{\"tests\":\"...\",\"code_quality\":\"...\",\"issues_identified\":\"...\",\"fixes_applied\":\"...\"},\"infrastructure_cicd\":{\"pipeline_evolutions\":\"...\",\"automations\":\"...\",\"environment_evolutions\":\"...\"},\"blocking_points_risks\":\"...\",\"pending_decisions\":\"...\",\"next_steps\":\"...\"}"
+    },
+    {
+     "status": 500,
+     "contentType": null,
+     "bodySample": "boom"
+    }
+   ]
+  }
+ ],
+ "clientMethods": [
+  {
+   "name": "narrate",
+   "returns": [
+    {
+     "class": "Hash",
+     "sample": "{\"executive_summary\"=>{\"achievements\"=>\"...\"}}"
+    }
+   ],
+   "raises": [
+    {
+     "error": "ApplicationClient::Error",
+     "status": 500,
+     "messageSample": "500: boom"
+    }
+   ]
+  }
+ ]
+}

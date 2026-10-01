@@ -1,0 +1,74 @@
+{
+ "displayName": "ProspectScoring::Client",
+ "clientFile": "app/clients/prospect_scoring/client.rb",
+ "baseUrlInTests": "http://prospect-scoring-test.example/webhook/candlekeep-prospect-scoring",
+ "source": "recorded from the passing specs of the repository at develop (WebMock stubs written by the team, checked against the real client code); not live responses",
+ "specs": [
+  "spec/clients/prospect_scoring/client_spec.rb",
+  "spec/requests/api/v1/companies_spec.rb"
+ ],
+ "endpoints": [
+  {
+   "method": "POST",
+   "path": "/",
+   "clientMethods": [
+    "score"
+   ],
+   "queryParams": [],
+   "requestBodySamples": [
+    "{\"criteria\":\"CI/CD pour la tech\",\"companies\":[{\"siren\":\"552032534\",\"nom_complet\":\"DANONE\",\"activite_principale\":\"70.10Z\"}],\"client_count\":5}",
+    "{\"criteria\":\"x\",\"companies\":[],\"client_count\":0}"
+   ],
+   "responses": [
+    {
+     "status": 200,
+     "contentType": "application/json",
+     "bodySample": "{\"scores\":[{\"siren\":\"552032534\",\"score\":45,\"rationale\":\"Hors secteur tech\"}]}"
+    },
+    {
+     "status": 200,
+     "contentType": "application/json",
+     "bodySample": "{\"scores\":[{\"siren\":\"111111111\",\"score\":20,\"rationale\":\"Hors cible\",\"history\":\"PME agricole.\"},{\"siren\":\"222222222\",\"score\":90,\"rationale\":\"Coeur de cible tech\",\"history\":\"Editeur logiciel fonde en 2015.\"}]}"
+    },
+    {
+     "status": 200,
+     "contentType": null,
+     "bodySample": ""
+    },
+    {
+     "status": 500,
+     "contentType": null,
+     "bodySample": "boom"
+    }
+   ]
+  }
+ ],
+ "clientMethods": [
+  {
+   "name": "score",
+   "returns": [
+    {
+     "class": "Hash",
+     "sample": "{\"scores\"=>[{\"siren\"=>\"552032534\", \"score\"=>45, \"rationale\"=>\"Hors secteur tech\"}]}"
+    }
+   ],
+   "raises": [
+    {
+     "error": "ApplicationClient::Error",
+     "status": 500,
+     "messageSample": "500: boom"
+    },
+    {
+     "error": "Faraday::ConnectionFailed",
+     "status": null,
+     "messageSample": "Connection refused"
+    },
+    {
+     "error": "ApplicationClient::Error",
+     "status": 200,
+     "messageSample": "200: empty response body"
+    }
+   ]
+  }
+ ]
+}

@@ -1,0 +1,27 @@
+{
+  "title": "http-api reference sheet",
+  "description": "Forme attendue d'une fiche reference-sheets/http-apis/*.json : une API HTTP externe appelée par un client de l'application, enregistrée depuis les specs vertes du dépôt (llm-specialists/_shared/scripts/api_sheets/).",
+  "type": "object",
+  "required": ["displayName", "endpoints"],
+  "properties": {
+    "displayName": { "type": "string" },
+    "clientFile": { "type": ["string", "null"] },
+    "baseUrlInTests": { "type": ["string", "null"] },
+    "source": { "type": "string" },
+    "endpoints": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["method", "path", "responses"],
+        "properties": {
+          "method": { "type": "string" },
+          "path": { "type": "string" },
+          "clientMethods": { "type": "array" },
+          "requestBodySamples": { "type": "array" },
+          "responses": { "type": "array" }
+        }
+      }
+    },
+    "clientMethods": { "type": "array" }
+  }
+}

@@ -1,0 +1,55 @@
+{
+ "displayName": "ProspectBriefing::Client",
+ "clientFile": "app/clients/prospect_briefing/client.rb",
+ "baseUrlInTests": "http://prospect-briefing-test.example/",
+ "source": "recorded from the passing specs of the repository at develop (WebMock stubs written by the team, checked against the real client code); not live responses",
+ "specs": [
+  "spec/clients/prospect_briefing/client_spec.rb",
+  "spec/requests/api/v1/prospects_spec.rb",
+  "spec/services/prospects/briefing_service_spec.rb"
+ ],
+ "endpoints": [
+  {
+   "method": "POST",
+   "path": "/",
+   "clientMethods": [
+    "brief"
+   ],
+   "queryParams": [],
+   "requestBodySamples": [
+    "{\"name\":\"Acme\",\"city\":\"Lyon\",\"siren\":\"552032534\",\"naf_label\":\"Programmation informatique\",\"headcount_range\":\"10 a 19 salaries\",\"client_count\":5}",
+    "{\"name\":\"Acme\",\"city\":\"Lyon\",\"siren\":null,\"naf_label\":null,\"headcount_range\":null,\"client_count\":0}"
+   ],
+   "responses": [
+    {
+     "status": 200,
+     "contentType": "application/json",
+     "bodySample": "{\"activity_summary\":\"Editeur de logiciels de gestion pour PME.\",\"clients_mentioned\":\"Aucune reference client publique trouvee.\",\"approach_angle\":\"Mettre en avant une offre de conseil DevOps.\",\"confidence\":\"medium\",\"rationale\":\"Site officiel trouve.\"}"
+    },
+    {
+     "status": 500,
+     "contentType": null,
+     "bodySample": "boom"
+    }
+   ]
+  }
+ ],
+ "clientMethods": [
+  {
+   "name": "brief",
+   "returns": [
+    {
+     "class": "Hash",
+     "sample": "{\"activity_summary\"=>\"Editeur de logiciels de gestion pour PME.\", \"clients_mentioned\"=>\"Aucune reference client publique trouvee.\", \"approach_angle\"=>\"Mettre en avant une offre de conseil DevOps.\", \"confidence\"=>\"medium\", \"rationale\"=>\"Site officiel trouve.\"}"
+    }
+   ],
+   "raises": [
+    {
+     "error": "ApplicationClient::Error",
+     "status": 500,
+     "messageSample": "500: boom"
+    }
+   ]
+  }
+ ]
+}

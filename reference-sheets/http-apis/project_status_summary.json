@@ -1,0 +1,54 @@
+{
+ "displayName": "ProjectStatusSummary::Client",
+ "clientFile": "app/clients/project_status_summary/client.rb",
+ "baseUrlInTests": "http://project-status-summary-test.example/webhook/candlekeep-project-status-summary",
+ "source": "recorded from the passing specs of the repository at develop (WebMock stubs written by the team, checked against the real client code); not live responses",
+ "specs": [
+  "spec/clients/project_status_summary/client_spec.rb",
+  "spec/requests/api/v1/projects_spec.rb"
+ ],
+ "endpoints": [
+  {
+   "method": "POST",
+   "path": "/",
+   "clientMethods": [
+    "summarize"
+   ],
+   "queryParams": [],
+   "requestBodySamples": [
+    "{\"data\":{\"attributes\":{\"name\":\"Candlekeep\"}}}",
+    "{}"
+   ],
+   "responses": [
+    {
+     "status": 200,
+     "contentType": "application/json",
+     "bodySample": "{\"summary\":\"Le projet avance normalement.\"}"
+    },
+    {
+     "status": 500,
+     "contentType": null,
+     "bodySample": "boom"
+    }
+   ]
+  }
+ ],
+ "clientMethods": [
+  {
+   "name": "summarize",
+   "returns": [
+    {
+     "class": "Hash",
+     "sample": "{\"summary\"=>\"Le projet avance normalement.\"}"
+    }
+   ],
+   "raises": [
+    {
+     "error": "ApplicationClient::Error",
+     "status": 500,
+     "messageSample": "500: boom"
+    }
+   ]
+  }
+ ]
+}

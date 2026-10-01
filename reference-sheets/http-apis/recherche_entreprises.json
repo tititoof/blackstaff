@@ -1,0 +1,74 @@
+{
+ "displayName": "RechercheEntreprises::Client",
+ "clientFile": "app/clients/recherche_entreprises/client.rb",
+ "baseUrlInTests": "http://recherche-entreprises-test.example/",
+ "source": "recorded from the passing specs of the repository at develop (WebMock stubs written by the team, checked against the real client code); not live responses",
+ "specs": [
+  "spec/clients/recherche_entreprises/client_spec.rb",
+  "spec/requests/api/v1/companies_spec.rb"
+ ],
+ "endpoints": [
+  {
+   "method": "GET",
+   "path": "/search",
+   "clientMethods": [
+    "search"
+   ],
+   "queryParams": [
+    "activite_principale",
+    "ca_max",
+    "ca_min",
+    "code_postal",
+    "departement",
+    "etat_administratif",
+    "page",
+    "per_page",
+    "q",
+    "region",
+    "section_activite_principale",
+    "tranche_effectif_salarie"
+   ],
+   "requestBodySamples": [],
+   "responses": [
+    {
+     "status": 200,
+     "contentType": "application/json",
+     "bodySample": "{\"results\":[{\"siren\":\"382990463\",\"nom_complet\":\"SUPINFO\"}],\"total_results\":1}"
+    },
+    {
+     "status": 200,
+     "contentType": "application/json",
+     "bodySample": "{\"results\":[],\"total_results\":0}"
+    },
+    {
+     "status": 200,
+     "contentType": "application/json",
+     "bodySample": "{\"results\":[{\"siren\":\"382990463\",\"nom_complet\":\"SUPINFO\",\"tranche_effectif_salarie\":\"11\",\"finances\":{\"2024\":{\"ca\":1500000,\"resultat_net\":75000}}}],\"total_results\":1}"
+    },
+    {
+     "status": 400,
+     "contentType": null,
+     "bodySample": "{\"erreur\":\"boom\"}"
+    }
+   ]
+  }
+ ],
+ "clientMethods": [
+  {
+   "name": "search",
+   "returns": [
+    {
+     "class": "Hash",
+     "sample": "{\"results\"=>[{\"siren\"=>\"382990463\", \"nom_complet\"=>\"SUPINFO\"}], \"total_results\"=>1}"
+    }
+   ],
+   "raises": [
+    {
+     "error": "ApplicationClient::Error",
+     "status": 400,
+     "messageSample": "400: {\"erreur\":\"boom\"}"
+    }
+   ]
+  }
+ ]
+}

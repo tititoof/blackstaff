@@ -1,0 +1,55 @@
+{
+ "displayName": "EmailDraftGeneration::Client",
+ "clientFile": "app/clients/email_draft_generation/client.rb",
+ "baseUrlInTests": "http://email-draft-generation-test.example/",
+ "source": "recorded from the passing specs of the repository at develop (WebMock stubs written by the team, checked against the real client code); not live responses",
+ "specs": [
+  "spec/clients/email_draft_generation/client_spec.rb",
+  "spec/requests/api/v1/prospects/email_drafts_spec.rb",
+  "spec/services/prospects/email_drafts/generate_service_spec.rb"
+ ],
+ "endpoints": [
+  {
+   "method": "POST",
+   "path": "/",
+   "clientMethods": [
+    "generate"
+   ],
+   "queryParams": [],
+   "requestBodySamples": [
+    "{\"prospect\":{\"name\":\"Acme\"},\"draft_type\":\"dev\"}",
+    "{}"
+   ],
+   "responses": [
+    {
+     "status": 200,
+     "contentType": "application/json",
+     "bodySample": "{\"subject\":\"Hello\",\"body\":\"Body text\"}"
+    },
+    {
+     "status": 500,
+     "contentType": null,
+     "bodySample": "boom"
+    }
+   ]
+  }
+ ],
+ "clientMethods": [
+  {
+   "name": "generate",
+   "returns": [
+    {
+     "class": "Hash",
+     "sample": "{\"subject\"=>\"Hello\", \"body\"=>\"Body text\"}"
+    }
+   ],
+   "raises": [
+    {
+     "error": "ApplicationClient::Error",
+     "status": 500,
+     "messageSample": "500: boom"
+    }
+   ]
+  }
+ ]
+}

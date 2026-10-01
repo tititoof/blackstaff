@@ -1,0 +1,196 @@
+{
+ "displayName": "OpenProject::Client",
+ "clientFile": "app/clients/open_project/client.rb",
+ "baseUrlInTests": "http://openproject-test.example/",
+ "source": "recorded from the passing specs of the repository at develop (WebMock stubs written by the team, checked against the real client code); not live responses",
+ "specs": [
+  "spec/clients/open_project/client_spec.rb",
+  "spec/requests/api/v1/open_project/work_packages_spec.rb",
+  "spec/requests/api/v1/open_project_spec.rb",
+  "spec/services/open_project/sync_work_packages_service_spec.rb",
+  "spec/services/open_project/update_work_package_service_spec.rb"
+ ],
+ "endpoints": [
+  {
+   "method": "GET",
+   "path": "/api/v3/statuses",
+   "clientMethods": [
+    "statuses"
+   ],
+   "queryParams": [],
+   "requestBodySamples": [],
+   "responses": [
+    {
+     "status": 200,
+     "contentType": "application/json",
+     "bodySample": "{\"_embedded\":{\"elements\":[{\"id\":1,\"name\":\"New\"}]}}"
+    },
+    {
+     "status": 500,
+     "contentType": null,
+     "bodySample": "boom"
+    }
+   ]
+  },
+  {
+   "method": "GET",
+   "path": "/api/v3/work_packages",
+   "clientMethods": [
+    "work_packages"
+   ],
+   "queryParams": [
+    "filters",
+    "pageSize"
+   ],
+   "requestBodySamples": [],
+   "responses": [
+    {
+     "status": 200,
+     "contentType": "application/json",
+     "bodySample": "{\"_embedded\":{\"elements\":[{\"id\":1,\"subject\":\"Do the thing\",\"_links\":{\"status\":{\"title\":\"New\"}}}]}}"
+    },
+    {
+     "status": 401,
+     "contentType": null,
+     "bodySample": "{\"message\":\"Unauthenticated\"}"
+    },
+    {
+     "status": 500,
+     "contentType": null,
+     "bodySample": "boom"
+    }
+   ]
+  },
+  {
+   "method": "GET",
+   "path": "/api/v3/work_packages/{id}/activities",
+   "clientMethods": [
+    "activities"
+   ],
+   "queryParams": [],
+   "requestBodySamples": [],
+   "responses": [
+    {
+     "status": 200,
+     "contentType": "application/json",
+     "bodySample": "{\"_embedded\":{\"elements\":[{\"id\":405,\"comment\":{\"raw\":\"Looks good\"}}]}}"
+    },
+    {
+     "status": 200,
+     "contentType": "application/json",
+     "bodySample": "{\"_embedded\":{\"elements\":[{\"id\":405,\"comment\":{\"raw\":\"Looks good\"},\"details\":[{\"raw\":\"Statut mis à New\"}],\"createdAt\":\"2026-08-26T06:10:46.427Z\",\"_links\":{\"user\":{\"href\":\"/api/v3/users/4\"}}}]}}"
+    },
+    {
+     "status": 500,
+     "contentType": null,
+     "bodySample": "boom"
+    }
+   ]
+  },
+  {
+   "method": "PATCH",
+   "path": "/api/v3/work_packages/{id}",
+   "clientMethods": [
+    "update_work_package"
+   ],
+   "queryParams": [],
+   "requestBodySamples": [
+    "{\"lockVersion\":3,\"percentageDone\":50,\"_links\":{\"status\":{\"href\":\"/api/v3/statuses/2\"}}}",
+    "{\"lockVersion\":3}"
+   ],
+   "responses": [
+    {
+     "status": 200,
+     "contentType": "application/json",
+     "bodySample": "{\"id\":42,\"lockVersion\":4}"
+    },
+    {
+     "status": 200,
+     "contentType": "application/json",
+     "bodySample": "{\"id\":42}"
+    },
+    {
+     "status": 200,
+     "contentType": "application/json",
+     "bodySample": "{\"lockVersion\":4,\"percentageDone\":75,\"_links\":{\"status\":{\"title\":\"In progress\"}}}"
+    },
+    {
+     "status": 409,
+     "contentType": null,
+     "bodySample": "{\"message\":\"updated by someone else\"}"
+    }
+   ]
+  }
+ ],
+ "clientMethods": [
+  {
+   "name": "activities",
+   "returns": [
+    {
+     "class": "Array",
+     "sample": "[{\"id\"=>405, \"comment\"=>{\"raw\"=>\"Looks good\"}}]"
+    }
+   ],
+   "raises": [
+    {
+     "error": "ApplicationClient::Error",
+     "status": 500,
+     "messageSample": "500: boom"
+    }
+   ]
+  },
+  {
+   "name": "statuses",
+   "returns": [
+    {
+     "class": "Array",
+     "sample": "[{\"id\"=>1, \"name\"=>\"New\"}]"
+    }
+   ],
+   "raises": [
+    {
+     "error": "ApplicationClient::Error",
+     "status": 500,
+     "messageSample": "500: boom"
+    }
+   ]
+  },
+  {
+   "name": "update_work_package",
+   "returns": [
+    {
+     "class": "Hash",
+     "sample": "{\"id\"=>42, \"lockVersion\"=>4}"
+    }
+   ],
+   "raises": [
+    {
+     "error": "ApplicationClient::Error",
+     "status": 409,
+     "messageSample": "409: {\"message\":\"updated by someone else\"}"
+    }
+   ]
+  },
+  {
+   "name": "work_packages",
+   "returns": [
+    {
+     "class": "Array",
+     "sample": "[{\"id\"=>1, \"subject\"=>\"Do the thing\", \"_links\"=>{\"status\"=>{\"title\"=>\"New\"}}}]"
+    }
+   ],
+   "raises": [
+    {
+     "error": "ApplicationClient::Error",
+     "status": 401,
+     "messageSample": "401: {\"message\":\"Unauthenticated\"}"
+    },
+    {
+     "error": "ApplicationClient::Error",
+     "status": 500,
+     "messageSample": "500: boom"
+    }
+   ]
+  }
+ ]
+}

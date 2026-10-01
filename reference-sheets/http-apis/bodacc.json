@@ -1,0 +1,61 @@
+{
+ "displayName": "Bodacc::Client",
+ "clientFile": "app/clients/bodacc/client.rb",
+ "baseUrlInTests": "https://bodacc-datadila.opendatasoft.com/api/explore/v2.1/",
+ "source": "recorded from the passing specs of the repository at develop (WebMock stubs written by the team, checked against the real client code); not live responses",
+ "specs": [
+  "spec/clients/bodacc/client_spec.rb",
+  "spec/requests/api/v1/companies/bodacc_spec.rb"
+ ],
+ "endpoints": [
+  {
+   "method": "GET",
+   "path": "/catalog/datasets/annonces-commerciales/records",
+   "clientMethods": [
+    "notices"
+   ],
+   "queryParams": [
+    "limit",
+    "order_by",
+    "select",
+    "where"
+   ],
+   "requestBodySamples": [],
+   "responses": [
+    {
+     "status": 200,
+     "contentType": "application/json",
+     "bodySample": "{\"total_count\":1,\"results\":[{\"id\":\"A1\"}]}"
+    },
+    {
+     "status": 200,
+     "contentType": "application/json",
+     "bodySample": "{\"total_count\":1,\"results\":[{\"id\":\"A1\",\"dateparution\":\"2026-10-01\",\"familleavis\":\"collective\",\"familleavis_lib\":\"Procédures collectives\",\"jugement\":\"{\\\"nature\\\":\\\"Jugement d'ouverture de liquidation judiciaire\\\"}\"}]}"
+    },
+    {
+     "status": 500,
+     "contentType": null,
+     "bodySample": "boom"
+    }
+   ]
+  }
+ ],
+ "clientMethods": [
+  {
+   "name": "notices",
+   "returns": [
+    {
+     "class": "Hash",
+     "sample": "{\"total_count\"=>1, \"results\"=>[{\"id\"=>\"A1\"}]}"
+    }
+   ],
+   "raises": [
+    {
+     "error": "ApplicationClient::Error",
+     "status": 500,
+     "messageSample": "500: boom"
+    }
+   ]
+  }
+ ]
+}
