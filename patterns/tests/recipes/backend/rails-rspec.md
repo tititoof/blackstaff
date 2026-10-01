@@ -50,6 +50,12 @@ title: Specs RSpec (Rails 8, rubocop-rails-omakase)
 11. **Colonnes `jsonb`** : relues avec des clés **chaînes**, même écrites avec des symboles →
    `expect(record.result).to eq({ "foo" => "bar" })`. Mais `parsed_body` symbolise en profondeur →
    `expect(parsed_body[:result]).to eq({ foo: "bar" })`.
+12. **Webhook signé (HMAC, Svix…)** : la signature porte sur le corps EXACT reçu. Calcule-la sur une
+   chaîne JSON fixe, puis poste CETTE chaîne telle quelle :
+   `post "/api/v1/webhooks/x", params: raw_body, headers: signed_headers.merge("CONTENT_TYPE" => "application/json")`.
+   **Jamais `as: :json` avec une chaîne** (Rails la ré-encode : le corps reçu ne correspond plus à la
+   signature, 401). Le secret se lit dans les credentials de test, on ne les modifie pas
+   (`Rails.application.credentials.x = ...` fuit vers toute la suite).
 
 # Exemple 1 (service de synchronisation avec client injecté)
 
