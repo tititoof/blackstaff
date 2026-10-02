@@ -1,6 +1,6 @@
 {
  "displayName": "test environment",
- "source": "observed by running the test environment of candlekeep-backend at develop cb29bd4 (llm-specialists/_shared/scripts/test_facts/run.py); regenerate after changing factories, serializers, models or spec/support",
+ "source": "observed by running the test environment of candlekeep-backend at develop b8e0a68 (llm-specialists/_shared/scripts/test_facts/run.py); regenerate after changing factories, serializers, models or spec/support",
  "json": {
   "time": {
    "expression": "Time.zone.local(2026, 9, 28, 12).to_json",
@@ -17,37 +17,37 @@
    "serializer": "ActivitySerializer",
    "factory": "activity",
    "renderedWith": "ActivitySerializer.new(record).serializable_hash",
-   "sample": "{\"data\":{\"id\":\"1\",\"type\":\"activity\",\"attributes\":{\"kind\":\"note\",\"message\":\"A comment\",\"created_at\":\"2026-10-02T06:39:21.626Z\"}}}"
+   "sample": "{\"data\":{\"id\":\"1\",\"type\":\"activity\",\"attributes\":{\"kind\":\"note\",\"message\":\"A comment\",\"created_at\":\"2026-10-02T08:39:30.552Z\"}}}"
   },
   {
    "serializer": "EmailDraftSerializer",
    "factory": "email_draft",
    "renderedWith": "EmailDraftSerializer.new(record).serializable_hash",
-   "sample": "{\"data\":{\"id\":\"1\",\"type\":\"email_draft\",\"attributes\":{\"prospect_id\":2,\"recipient_email\":\"bao@hartmann-marquardt.example\",\"subject\":\"Suite à notre échange\",\"body\":\"Bonjour, ...\",\"status\":\"draft\",\"sent_at\":null,\"created_at\":\"2026-10-02T06:39:21.633Z\",\"updated_at\":\"2026-10-02T06:39:21.633Z\"}}}"
+   "sample": "{\"data\":{\"id\":\"1\",\"type\":\"email_draft\",\"attributes\":{\"prospect_id\":2,\"recipient_email\":\"grady_kohler@shields.example\",\"subject\":\"Suite à notre échange\",\"body\":\"Bonjour, ...\",\"status\":\"draft\",\"sent_at\":null,\"created_at\":\"2026-10-02T08:39:30.559Z\",\"updated_at\":\"2026-10-02T08:39:30.559Z\"}}}"
   },
   {
    "serializer": "InboundEmailSerializer",
    "factory": "inbound_email",
    "renderedWith": "InboundEmailSerializer.new(record).serializable_hash",
-   "sample": "{\"data\":{\"id\":\"1\",\"type\":\"inbound_email\",\"attributes\":{\"prospect_id\":null,\"dolibarr_thirdparty_id\":null,\"message_id\":\"\\u003cemail-3@example.com\\u003e\",\"from_email\":\"shannon@ondricka.test\",\"to_email\":\"christophe.hartmann@chartman2-fr.ovh\",\"subject\":\"Re: Suite a notre echange\",\"text_body\":\"Bonjour, ...\",\"received_at\":\"2026-10-02T06:39:21.636Z\",\"created_at\":\"2026-10-02T06:39:21.638Z\"}}}"
+   "sample": "{\"data\":{\"id\":\"1\",\"type\":\"inbound_email\",\"attributes\":{\"prospect_id\":null,\"dolibarr_thirdparty_id\":null,\"message_id\":\"\\u003cemail-3@example.com\\u003e\",\"from_email\":\"colton.willms@hoppe-ferry.test\",\"to_email\":\"christophe.hartmann@chartman2-fr.ovh\",\"subject\":\"Re: Suite a notre echange\",\"text_body\":\"Bonjour, ...\",\"received_at\":\"2026-10-02T08:39:30.562Z\",\"created_at\":\"2026-10-02T08:39:30.564Z\"}}}"
   },
   {
    "serializer": "ProjectRepositorySerializer",
    "factory": "project_repository",
    "renderedWith": "ProjectRepositorySerializer.new(record).serializable_hash",
-   "sample": "{\"data\":{\"id\":\"1\",\"type\":\"project_repository\",\"attributes\":{\"forgejo_owner\":\"toofytroll\",\"forgejo_name\":\"repo-3\",\"openproject_project_name\":null,\"jenkins_job_name\":null,\"sonarqube_main_project_key\":null,\"sonarqube_develop_project_key\":null,\"sonarqube_provisioned_at\":null,\"created_at\":\"2026-10-02T06:39:21.648Z\",\"updated_at\":\"2026-10-02T06:39:21.648Z\"}}}"
+   "sample": "{\"data\":{\"id\":\"1\",\"type\":\"project_repository\",\"attributes\":{\"forgejo_owner\":\"toofytroll\",\"forgejo_name\":\"repo-3\",\"openproject_project_name\":null,\"jenkins_job_name\":null,\"sonarqube_main_project_key\":null,\"sonarqube_develop_project_key\":null,\"sonarqube_provisioned_at\":null,\"created_at\":\"2026-10-02T08:39:30.576Z\",\"updated_at\":\"2026-10-02T08:39:30.576Z\"}}}"
   },
   {
    "serializer": "ProjectSerializer",
    "factory": "project",
    "renderedWith": "ProjectSerializer.new(record).serializable_hash",
-   "sample": "{\"data\":{\"id\":\"2\",\"type\":\"project\",\"attributes\":{\"name\":\"Harber Inc\",\"description\":\"Ameliorated full-range standardization\",\"context\":\"Non perferendis molestiae. Non dignissimos qui. Aperiam quia aut.\",\"dolibarr_id\":6,\"created_at\":\"2026-10-02T06:39:21.654Z\",\"updated_at\":\"2026-10-02T06:39:21.654Z\",\"dolibarr_client_name\":\"Davis Inc\",\"repositories\":[]}}}"
+   "sample": "{\"data\":{\"id\":\"2\",\"type\":\"project\",\"attributes\":{\"name\":\"Lind-Mann\",\"description\":\"Self-enabling intangible access\",\"context\":\"Veritatis nesciunt sit. Nihil nesciunt facilis. Qui et at.\",\"dolibarr_id\":6,\"created_at\":\"2026-10-02T08:39:30.583Z\",\"updated_at\":\"2026-10-02T08:39:30.583Z\",\"dolibarr_client_name\":\"Mueller-Hansen\",\"repositories\":[]}}}"
   },
   {
    "serializer": "ProspectSerializer",
    "factory": "prospect",
    "renderedWith": "ProspectSerializer.new(record).serializable_hash",
-   "sample": "{\"data\":{\"id\":\"3\",\"type\":\"prospect\",\"attributes\":{\"siren\":\"000000005\",\"name\":\"Botsford, Auer and Rolfson\",\"city\":\"Erdmanshire\",\"naf_code\":\"6201Z\",\"naf_label\":\"Programmation informatique\",\"headcount_range\":null,\"revenue\":null,\"revenue_year\":null,\"contact\":\"Sen. Wilton Kuvalis\",\"email\":\"tennie.gottlieb@kertzmann-hudson.example\",\"phone\":null,\"website\":null,\"stage\":\"to_contact\",\"notes\":null,\"potential_amount\":null,\"probability\":null,\"follow_up_date\":null,\"last_email_sent_at\":null,\"dolibarr_id\":null,\"created_at\":\"2026-10-02T06:39:21.662Z\",\"updated_at\":\"2026-10-02T06:39:21.662Z\"}}}"
+   "sample": "{\"data\":{\"id\":\"3\",\"type\":\"prospect\",\"attributes\":{\"siren\":\"000000005\",\"name\":\"Sipes, Bruen and Kautzer\",\"city\":\"East Roseann\",\"naf_code\":\"6201Z\",\"naf_label\":\"Programmation informatique\",\"headcount_range\":null,\"revenue\":null,\"revenue_year\":null,\"contact\":\"Carmelia Treutel\",\"email\":\"barbra_ritchie@nikolaus-sauer.test\",\"phone\":null,\"website\":null,\"stage\":\"to_contact\",\"notes\":null,\"potential_amount\":null,\"probability\":null,\"follow_up_date\":null,\"last_email_sent_at\":null,\"dolibarr_id\":null,\"created_at\":\"2026-10-02T08:39:30.590Z\",\"updated_at\":\"2026-10-02T08:39:30.590Z\"}}}"
   },
   {
    "serializer": "SalesExerciseAttemptSerializer",
@@ -63,7 +63,7 @@
     "message": "\"A comment\""
    },
    "errorMessages": [
-    "errors.add(:prospect, :blank) → errors[:prospect] = [\"can't be blank\"], full_messages = [\"Prospect can't be blank\"]",
+    "errors.add(:prospect, :required) → errors[:prospect] = [\"must exist\"], full_messages = [\"Prospect must exist\"]",
     "errors.add(:kind, :inclusion) → errors[:kind] = [\"is not included in the list\"], full_messages = [\"Kind is not included in the list\"]"
    ],
    "associations": [
@@ -76,12 +76,12 @@
    "name": "devise_api_token",
    "class": "Devise::Api::Token",
    "attributes": {
-    "access_token": "generated (e.g. \"990afa447db8d8a91595b02a8ac52f720010ec251aeed30c8f0149e4bfa622c8\")",
-    "refresh_token": "generated (e.g. \"bde01106878a1f0b83dea88db590ddee89bc6c0246b35afc4e34b4f94949ebb2\")",
+    "access_token": "generated (e.g. \"b8a04878c94b142b21af26317a809e84d758f11779cf8c5845b5c9f1ce9ffdfd\")",
+    "refresh_token": "generated (e.g. \"7b03eaba64202c8c6352cb088b8f3bf2ab775f805e2b5ecd17b5e3da541d24cd\")",
     "expires_in": "3600"
    },
    "errorMessages": [
-    "errors.add(:resource_owner, :blank) → errors[:resource_owner] = [\"can't be blank\"], full_messages = [\"Resource owner can't be blank\"]",
+    "errors.add(:resource_owner, :required) → errors[:resource_owner] = [\"must exist\"], full_messages = [\"Resource owner must exist\"]",
     "errors.add(:access_token, :blank) → errors[:access_token] = [\"can't be blank\"], full_messages = [\"Access token can't be blank\"]",
     "errors.add(:access_token, :taken) → errors[:access_token] = [\"has already been taken\"], full_messages = [\"Access token has already been taken\"]",
     "errors.add(:refresh_token, :blank) → errors[:refresh_token] = [\"can't be blank\"], full_messages = [\"Refresh token can't be blank\"]",
@@ -135,10 +135,10 @@
    "class": "DolibarrThirdparty",
    "attributes": {
     "dolibarr_id": "generated (e.g. 1)",
-    "name": "generated (e.g. \"Schaefer, Zulauf and Hammes\")",
+    "name": "generated (e.g. \"Collier Inc\")",
     "client": "1",
-    "email": "generated (e.g. \"tyson_cormier@hegmann.test\")",
-    "town": "generated (e.g. \"West Linwood\")",
+    "email": "generated (e.g. \"willis_will@nicolas-streich.test\")",
+    "town": "generated (e.g. \"Abshireport\")",
     "raw": "{}",
     "last_synced_at": "Time.current"
    },
@@ -154,13 +154,13 @@
    "name": "email_draft",
    "class": "EmailDraft",
    "attributes": {
-    "recipient_email": "generated (e.g. \"lorette@sauer.example\")",
+    "recipient_email": "generated (e.g. \"lucien@bailey-dooley.test\")",
     "subject": "\"Suite à notre échange\"",
     "body": "\"Bonjour, ...\"",
     "status": "\"draft\""
    },
    "errorMessages": [
-    "errors.add(:prospect, :blank) → errors[:prospect] = [\"can't be blank\"], full_messages = [\"Prospect can't be blank\"]",
+    "errors.add(:prospect, :required) → errors[:prospect] = [\"must exist\"], full_messages = [\"Prospect must exist\"]",
     "errors.add(:recipient_email, :blank) → errors[:recipient_email] = [\"can't be blank\"], full_messages = [\"Recipient email can't be blank\"]",
     "errors.add(:subject, :blank) → errors[:subject] = [\"can't be blank\"], full_messages = [\"Subject can't be blank\"]",
     "errors.add(:body, :blank) → errors[:body] = [\"can't be blank\"], full_messages = [\"Body can't be blank\"]"
@@ -182,7 +182,7 @@
    "attributes": {
     "forgejo_id": "generated (e.g. 1)",
     "number": "generated (e.g. 1)",
-    "title": "generated (e.g. \"Aliquam distinctio minima delectus.\")",
+    "title": "generated (e.g. \"Laudantium aut reprehenderit animi.\")",
     "state": "\"open\"",
     "pull_request": "false",
     "repository_full_name": "\"toofytroll/candlekeep-backend\"",
@@ -202,7 +202,7 @@
    "class": "InboundEmail",
    "attributes": {
     "message_id": "generated (e.g. \"<email-1@example.com>\")",
-    "from_email": "generated (e.g. \"kristofer@wisozk-hudson.example\")",
+    "from_email": "generated (e.g. \"simon@nolan.test\")",
     "to_email": "\"christophe.hartmann@chartman2-fr.ovh\"",
     "subject": "\"Re: Suite a notre echange\"",
     "text_body": "\"Bonjour, ...\"",
@@ -229,7 +229,7 @@
     "raw": "{}"
    },
    "errorMessages": [
-    "errors.add(:jenkins_job, :blank) → errors[:jenkins_job] = [\"can't be blank\"], full_messages = [\"Jenkins job can't be blank\"]",
+    "errors.add(:jenkins_job, :required) → errors[:jenkins_job] = [\"must exist\"], full_messages = [\"Jenkins job must exist\"]",
     "errors.add(:number, :blank) → errors[:number] = [\"can't be blank\"], full_messages = [\"Number can't be blank\"]",
     "errors.add(:number, :taken) → errors[:number] = [\"has already been taken\"], full_messages = [\"Number has already been taken\"]"
    ],
@@ -266,7 +266,7 @@
    "class": "OpenProjectWorkPackage",
    "attributes": {
     "openproject_id": "generated (e.g. 1)",
-    "subject": "generated (e.g. \"Et possimus quia commodi.\")",
+    "subject": "generated (e.g. \"Autem unde aut quae.\")",
     "status": "\"New\"",
     "work_package_type": "\"Task\"",
     "project_name": "\"Candlekeep\"",
@@ -289,7 +289,7 @@
     "forgejo_name": "generated (e.g. \"repo-1\")"
    },
    "errorMessages": [
-    "errors.add(:project, :blank) → errors[:project] = [\"can't be blank\"], full_messages = [\"Project can't be blank\"]",
+    "errors.add(:project, :required) → errors[:project] = [\"must exist\"], full_messages = [\"Project must exist\"]",
     "errors.add(:forgejo_owner, :blank) → errors[:forgejo_owner] = [\"can't be blank\"], full_messages = [\"Forgejo owner can't be blank\"]",
     "errors.add(:forgejo_name, :blank) → errors[:forgejo_name] = [\"can't be blank\"], full_messages = [\"Forgejo name can't be blank\"]",
     "errors.add(:forgejo_name, :taken) → errors[:forgejo_name] = [\"has already been taken\"], full_messages = [\"Forgejo name has already been taken\"]",
@@ -311,9 +311,9 @@
    "name": "project",
    "class": "Project",
    "attributes": {
-    "name": "generated (e.g. \"Schroeder-Schamberger\")",
-    "description": "generated (e.g. \"Visionary optimal benchmark\")",
-    "context": "generated (e.g. \"Saepe quia provident. Qui aut ut. Inventore et saepe.\")",
+    "name": "generated (e.g. \"Gutmann Group\")",
+    "description": "generated (e.g. \"Triple-buffered executive flexibility\")",
+    "context": "generated (e.g. \"Amet voluptatem eos. Qui accusantium aspernatur. Ea nisi nemo.\")",
     "dolibarr_id": "generated (e.g. 3)"
    },
    "errorMessages": [
@@ -332,12 +332,12 @@
    "class": "Prospect",
    "attributes": {
     "siren": "generated (e.g. \"000000001\")",
-    "name": "generated (e.g. \"Effertz Inc\")",
-    "city": "generated (e.g. \"New Johnnystad\")",
+    "name": "generated (e.g. \"Doyle, Cruickshank and Larson\")",
+    "city": "generated (e.g. \"East Clintshire\")",
     "naf_code": "\"6201Z\"",
     "naf_label": "\"Programmation informatique\"",
-    "email": "generated (e.g. \"lynn.carter@damore.test\")",
-    "contact": "generated (e.g. \"Catharine Tillman\")",
+    "email": "generated (e.g. \"alyson@cormier.test\")",
+    "contact": "generated (e.g. \"Stephen Mayer\")",
     "stage": "\"to_contact\""
    },
    "errorMessages": [
@@ -372,7 +372,7 @@
     "period_end": "\"2026-08-26\""
    },
    "errorMessages": [
-    "errors.add(:project, :blank) → errors[:project] = [\"can't be blank\"], full_messages = [\"Project can't be blank\"]",
+    "errors.add(:project, :required) → errors[:project] = [\"must exist\"], full_messages = [\"Project must exist\"]",
     "errors.add(:report_type, :blank) → errors[:report_type] = [\"can't be blank\"], full_messages = [\"Report type can't be blank\"]"
    ],
    "associations": [
@@ -402,7 +402,7 @@
     "feedback": "\"Bon travail\""
    },
    "errorMessages": [
-    "errors.add(:sales_exercise, :blank) → errors[:sales_exercise] = [\"can't be blank\"], full_messages = [\"Sales exercise can't be blank\"]",
+    "errors.add(:sales_exercise, :required) → errors[:sales_exercise] = [\"must exist\"], full_messages = [\"Sales exercise must exist\"]",
     "errors.add(:answer_text, :blank) → errors[:answer_text] = [\"can't be blank\"], full_messages = [\"Answer text can't be blank\"]",
     "errors.add(:score, :not_a_number) → errors[:score] = [\"is not a number\"], full_messages = [\"Score is not a number\"]"
    ],
@@ -426,7 +426,7 @@
     "position": "generated (e.g. 1)"
    },
    "errorMessages": [
-    "errors.add(:sales_lesson, :blank) → errors[:sales_lesson] = [\"can't be blank\"], full_messages = [\"Sales lesson can't be blank\"]",
+    "errors.add(:sales_lesson, :required) → errors[:sales_lesson] = [\"must exist\"], full_messages = [\"Sales lesson must exist\"]",
     "errors.add(:slug, :blank) → errors[:slug] = [\"can't be blank\"], full_messages = [\"Slug can't be blank\"]",
     "errors.add(:slug, :taken) → errors[:slug] = [\"has already been taken\"], full_messages = [\"Slug has already been taken\"]",
     "errors.add(:prompt, :blank) → errors[:prompt] = [\"can't be blank\"], full_messages = [\"Prompt can't be blank\"]",
@@ -456,7 +456,7 @@
     "position": "generated (e.g. 1)"
    },
    "errorMessages": [
-    "errors.add(:sales_level, :blank) → errors[:sales_level] = [\"can't be blank\"], full_messages = [\"Sales level can't be blank\"]",
+    "errors.add(:sales_level, :required) → errors[:sales_level] = [\"must exist\"], full_messages = [\"Sales level must exist\"]",
     "errors.add(:slug, :blank) → errors[:slug] = [\"can't be blank\"], full_messages = [\"Slug can't be blank\"]",
     "errors.add(:slug, :taken) → errors[:slug] = [\"has already been taken\"], full_messages = [\"Slug has already been taken\"]",
     "errors.add(:title, :blank) → errors[:title] = [\"can't be blank\"], full_messages = [\"Title can't be blank\"]",
@@ -495,18 +495,42 @@
    "columnsNotSetByFactory": []
   },
   {
+   "name": "sonar_qube_measure_snapshot",
+   "class": "SonarQubeMeasureSnapshot",
+   "attributes": {
+    "captured_on": "generated (e.g. Wed, 02 Sep 2026)",
+    "sqale_index": "120",
+    "code_smells": "3",
+    "bugs": "0",
+    "vulnerabilities": "0",
+    "coverage": "85.5",
+    "measures": "{\"sqale_index\"=>\"120\", \"code_smells\"=>\"3\", \"bugs\"=>\"0\", \"vulnerabilities\"=>\"0\", \"coverage\"=>\"85.5\"}"
+   },
+   "errorMessages": [
+    "errors.add(:sonar_qube_project, :required) → errors[:sonar_qube_project] = [\"must exist\"], full_messages = [\"Sonar qube project must exist\"]",
+    "errors.add(:captured_on, :blank) → errors[:captured_on] = [\"can't be blank\"], full_messages = [\"Captured on can't be blank\"]",
+    "errors.add(:captured_on, :taken) → errors[:captured_on] = [\"has already been taken\"], full_messages = [\"Captured on has already been taken\"]"
+   ],
+   "associations": [
+    "sonar_qube_project"
+   ],
+   "traits": [],
+   "columnsNotSetByFactory": []
+  },
+  {
    "name": "sonar_qube_project",
    "class": "SonarQubeProject",
    "attributes": {
     "project_key": "generated (e.g. \"project-1\")",
-    "name": "generated (e.g. \"Biodex\")",
+    "name": "generated (e.g. \"Trippledex\")",
     "measures": "{\"code_smells\"=>\"3\", \"bugs\"=>\"0\"}",
     "raw": "{}",
     "last_synced_at": "Time.current"
    },
    "errorMessages": [
     "errors.add(:project_key, :blank) → errors[:project_key] = [\"can't be blank\"], full_messages = [\"Project key can't be blank\"]",
-    "errors.add(:project_key, :taken) → errors[:project_key] = [\"has already been taken\"], full_messages = [\"Project key has already been taken\"]"
+    "errors.add(:project_key, :taken) → errors[:project_key] = [\"has already been taken\"], full_messages = [\"Project key has already been taken\"]",
+    "errors.add(:measure_snapshots, :invalid) → errors[:measure_snapshots] = [\"is invalid\"], full_messages = [\"Measure snapshots is invalid\"]"
    ],
    "associations": [],
    "traits": [],
@@ -541,8 +565,8 @@
    "name": "user",
    "class": "User",
    "attributes": {
-    "email": "generated (e.g. \"jacques.heathcote@hermann.test\")",
-    "password": "generated (e.g. \"6YLiFmlkE\")"
+    "email": "generated (e.g. \"milan@bartell-russel.test\")",
+    "password": "generated (e.g. \"6W7cHsq47s3OEoMr\")"
    },
    "errorMessages": [
     "errors.add(:email, :blank) → errors[:email] = [\"can't be blank\"], full_messages = [\"Email can't be blank\"]",
