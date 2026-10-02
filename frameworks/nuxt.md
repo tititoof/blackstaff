@@ -46,6 +46,28 @@ Tout fichier `.vue` utilise `<script setup lang="ts">`. Les types
 partagés (interfaces de modèles, réponses API) vivent dans
 `types/` (v3) ou `shared/types/` (v4, accessible aussi côté `server/`).
 
+# Style (ESLint `@nuxt/eslint`, `stylistic: true`) et qualité
+
+Le lint du projet est bloquant : écris directement dans son style plutôt que
+de compter sur `eslint --fix`.
+
+- **Pas de point-virgule** en fin d'instruction (`.ts` et `<script setup>`).
+- Guillemets **simples** pour les chaînes, indentation de 2 espaces, une
+  ligne vide finale en fin de fichier.
+- Aucun import ni variable inutilisés (`@typescript-eslint/no-unused-vars`),
+  y compris les `import type`.
+- **Jamais de ternaire imbriqué** (`a ? x : b ? y : z`) : SonarQube le compte
+  comme violation (`typescript:S3358`) et la porte qualité de la CI échoue.
+  Écris des `if` avec retours anticipés :
+
+```ts
+export const changeColor = (change: number | null): string | undefined => {
+  if (change === null || change === 0) return undefined
+  if (change > 0) return 'error'
+  return 'success'
+}
+```
+
 # Tests
 
 - Unitaires : Vitest, fichiers `*.spec.ts` colocalisés avec le code testé
