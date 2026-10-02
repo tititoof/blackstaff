@@ -1,0 +1,703 @@
+{
+ "displayName": "test environment",
+ "source": "observed by running the test environment of candlekeep-backend at develop cb29bd4 (llm-specialists/_shared/scripts/test_facts/run.py); regenerate after changing factories, serializers, models or spec/support",
+ "json": {
+  "time": {
+   "expression": "Time.zone.local(2026, 9, 28, 12).to_json",
+   "renders": "\"2026-09-28T12:00:00.000Z\""
+  },
+  "date": {
+   "expression": "Date.new(2026, 9, 28).to_json",
+   "renders": "\"2026-09-28\""
+  },
+  "timeZone": "UTC"
+ },
+ "serializers": [
+  {
+   "serializer": "ActivitySerializer",
+   "factory": "activity",
+   "renderedWith": "ActivitySerializer.new(record).serializable_hash",
+   "sample": "{\"data\":{\"id\":\"1\",\"type\":\"activity\",\"attributes\":{\"kind\":\"note\",\"message\":\"A comment\",\"created_at\":\"2026-10-02T06:39:21.626Z\"}}}"
+  },
+  {
+   "serializer": "EmailDraftSerializer",
+   "factory": "email_draft",
+   "renderedWith": "EmailDraftSerializer.new(record).serializable_hash",
+   "sample": "{\"data\":{\"id\":\"1\",\"type\":\"email_draft\",\"attributes\":{\"prospect_id\":2,\"recipient_email\":\"bao@hartmann-marquardt.example\",\"subject\":\"Suite à notre échange\",\"body\":\"Bonjour, ...\",\"status\":\"draft\",\"sent_at\":null,\"created_at\":\"2026-10-02T06:39:21.633Z\",\"updated_at\":\"2026-10-02T06:39:21.633Z\"}}}"
+  },
+  {
+   "serializer": "InboundEmailSerializer",
+   "factory": "inbound_email",
+   "renderedWith": "InboundEmailSerializer.new(record).serializable_hash",
+   "sample": "{\"data\":{\"id\":\"1\",\"type\":\"inbound_email\",\"attributes\":{\"prospect_id\":null,\"dolibarr_thirdparty_id\":null,\"message_id\":\"\\u003cemail-3@example.com\\u003e\",\"from_email\":\"shannon@ondricka.test\",\"to_email\":\"christophe.hartmann@chartman2-fr.ovh\",\"subject\":\"Re: Suite a notre echange\",\"text_body\":\"Bonjour, ...\",\"received_at\":\"2026-10-02T06:39:21.636Z\",\"created_at\":\"2026-10-02T06:39:21.638Z\"}}}"
+  },
+  {
+   "serializer": "ProjectRepositorySerializer",
+   "factory": "project_repository",
+   "renderedWith": "ProjectRepositorySerializer.new(record).serializable_hash",
+   "sample": "{\"data\":{\"id\":\"1\",\"type\":\"project_repository\",\"attributes\":{\"forgejo_owner\":\"toofytroll\",\"forgejo_name\":\"repo-3\",\"openproject_project_name\":null,\"jenkins_job_name\":null,\"sonarqube_main_project_key\":null,\"sonarqube_develop_project_key\":null,\"sonarqube_provisioned_at\":null,\"created_at\":\"2026-10-02T06:39:21.648Z\",\"updated_at\":\"2026-10-02T06:39:21.648Z\"}}}"
+  },
+  {
+   "serializer": "ProjectSerializer",
+   "factory": "project",
+   "renderedWith": "ProjectSerializer.new(record).serializable_hash",
+   "sample": "{\"data\":{\"id\":\"2\",\"type\":\"project\",\"attributes\":{\"name\":\"Harber Inc\",\"description\":\"Ameliorated full-range standardization\",\"context\":\"Non perferendis molestiae. Non dignissimos qui. Aperiam quia aut.\",\"dolibarr_id\":6,\"created_at\":\"2026-10-02T06:39:21.654Z\",\"updated_at\":\"2026-10-02T06:39:21.654Z\",\"dolibarr_client_name\":\"Davis Inc\",\"repositories\":[]}}}"
+  },
+  {
+   "serializer": "ProspectSerializer",
+   "factory": "prospect",
+   "renderedWith": "ProspectSerializer.new(record).serializable_hash",
+   "sample": "{\"data\":{\"id\":\"3\",\"type\":\"prospect\",\"attributes\":{\"siren\":\"000000005\",\"name\":\"Botsford, Auer and Rolfson\",\"city\":\"Erdmanshire\",\"naf_code\":\"6201Z\",\"naf_label\":\"Programmation informatique\",\"headcount_range\":null,\"revenue\":null,\"revenue_year\":null,\"contact\":\"Sen. Wilton Kuvalis\",\"email\":\"tennie.gottlieb@kertzmann-hudson.example\",\"phone\":null,\"website\":null,\"stage\":\"to_contact\",\"notes\":null,\"potential_amount\":null,\"probability\":null,\"follow_up_date\":null,\"last_email_sent_at\":null,\"dolibarr_id\":null,\"created_at\":\"2026-10-02T06:39:21.662Z\",\"updated_at\":\"2026-10-02T06:39:21.662Z\"}}}"
+  },
+  {
+   "serializer": "SalesExerciseAttemptSerializer",
+   "error": "ActiveRecord::RecordInvalid: Validation failed: Position has already been taken"
+  }
+ ],
+ "factories": [
+  {
+   "name": "activity",
+   "class": "Activity",
+   "attributes": {
+    "kind": "\"note\"",
+    "message": "\"A comment\""
+   },
+   "errorMessages": [
+    "errors.add(:prospect, :blank) → errors[:prospect] = [\"can't be blank\"], full_messages = [\"Prospect can't be blank\"]",
+    "errors.add(:kind, :inclusion) → errors[:kind] = [\"is not included in the list\"], full_messages = [\"Kind is not included in the list\"]"
+   ],
+   "associations": [
+    "prospect"
+   ],
+   "traits": [],
+   "columnsNotSetByFactory": []
+  },
+  {
+   "name": "devise_api_token",
+   "class": "Devise::Api::Token",
+   "attributes": {
+    "access_token": "generated (e.g. \"990afa447db8d8a91595b02a8ac52f720010ec251aeed30c8f0149e4bfa622c8\")",
+    "refresh_token": "generated (e.g. \"bde01106878a1f0b83dea88db590ddee89bc6c0246b35afc4e34b4f94949ebb2\")",
+    "expires_in": "3600"
+   },
+   "errorMessages": [
+    "errors.add(:resource_owner, :blank) → errors[:resource_owner] = [\"can't be blank\"], full_messages = [\"Resource owner can't be blank\"]",
+    "errors.add(:access_token, :blank) → errors[:access_token] = [\"can't be blank\"], full_messages = [\"Access token can't be blank\"]",
+    "errors.add(:access_token, :taken) → errors[:access_token] = [\"has already been taken\"], full_messages = [\"Access token has already been taken\"]",
+    "errors.add(:refresh_token, :blank) → errors[:refresh_token] = [\"can't be blank\"], full_messages = [\"Refresh token can't be blank\"]",
+    "errors.add(:refresh_token, :taken) → errors[:refresh_token] = [\"has already been taken\"], full_messages = [\"Refresh token has already been taken\"]",
+    "errors.add(:expires_in, :blank) → errors[:expires_in] = [\"can't be blank\"], full_messages = [\"Expires in can't be blank\"]",
+    "errors.add(:expires_in, :not_a_number) → errors[:expires_in] = [\"is not a number\"], full_messages = [\"Expires in is not a number\"]",
+    "errors.add(:refreshes, :invalid) → errors[:refreshes] = [\"is invalid\"], full_messages = [\"Refreshes is invalid\"]"
+   ],
+   "associations": [
+    "resource_owner"
+   ],
+   "traits": [
+    "access_token_expired",
+    "refresh_token_expired",
+    "revoked"
+   ],
+   "columnsNotSetByFactory": [
+    "resource_owner_type=nil",
+    "revoked_at=nil",
+    "previous_refresh_token=nil"
+   ]
+  },
+  {
+   "name": "dolibarr_invoice",
+   "class": "DolibarrInvoice",
+   "attributes": {
+    "dolibarr_id": "generated (e.g. 1)",
+    "ref": "generated (e.g. \"FA1\")",
+    "socid": "1",
+    "status": "1",
+    "paid": "false",
+    "invoice_date": "2026-09-22",
+    "due_date": "2026-10-22",
+    "total_ht": "1000",
+    "total_ttc": "1200",
+    "raw": "{}",
+    "last_synced_at": "Time.current"
+   },
+   "errorMessages": [
+    "errors.add(:dolibarr_id, :blank) → errors[:dolibarr_id] = [\"can't be blank\"], full_messages = [\"Dolibarr can't be blank\"]",
+    "errors.add(:dolibarr_id, :taken) → errors[:dolibarr_id] = [\"has already been taken\"], full_messages = [\"Dolibarr has already been taken\"]"
+   ],
+   "associations": [],
+   "traits": [],
+   "columnsNotSetByFactory": [
+    "paid_on=nil"
+   ]
+  },
+  {
+   "name": "dolibarr_thirdparty",
+   "class": "DolibarrThirdparty",
+   "attributes": {
+    "dolibarr_id": "generated (e.g. 1)",
+    "name": "generated (e.g. \"Schaefer, Zulauf and Hammes\")",
+    "client": "1",
+    "email": "generated (e.g. \"tyson_cormier@hegmann.test\")",
+    "town": "generated (e.g. \"West Linwood\")",
+    "raw": "{}",
+    "last_synced_at": "Time.current"
+   },
+   "errorMessages": [
+    "errors.add(:dolibarr_id, :blank) → errors[:dolibarr_id] = [\"can't be blank\"], full_messages = [\"Dolibarr can't be blank\"]",
+    "errors.add(:dolibarr_id, :taken) → errors[:dolibarr_id] = [\"has already been taken\"], full_messages = [\"Dolibarr has already been taken\"]"
+   ],
+   "associations": [],
+   "traits": [],
+   "columnsNotSetByFactory": []
+  },
+  {
+   "name": "email_draft",
+   "class": "EmailDraft",
+   "attributes": {
+    "recipient_email": "generated (e.g. \"lorette@sauer.example\")",
+    "subject": "\"Suite à notre échange\"",
+    "body": "\"Bonjour, ...\"",
+    "status": "\"draft\""
+   },
+   "errorMessages": [
+    "errors.add(:prospect, :blank) → errors[:prospect] = [\"can't be blank\"], full_messages = [\"Prospect can't be blank\"]",
+    "errors.add(:recipient_email, :blank) → errors[:recipient_email] = [\"can't be blank\"], full_messages = [\"Recipient email can't be blank\"]",
+    "errors.add(:subject, :blank) → errors[:subject] = [\"can't be blank\"], full_messages = [\"Subject can't be blank\"]",
+    "errors.add(:body, :blank) → errors[:body] = [\"can't be blank\"], full_messages = [\"Body can't be blank\"]"
+   ],
+   "associations": [
+    "prospect"
+   ],
+   "traits": [
+    "draft",
+    "sent"
+   ],
+   "columnsNotSetByFactory": [
+    "sent_at=nil"
+   ]
+  },
+  {
+   "name": "forgejo_issue",
+   "class": "ForgejoIssue",
+   "attributes": {
+    "forgejo_id": "generated (e.g. 1)",
+    "number": "generated (e.g. 1)",
+    "title": "generated (e.g. \"Aliquam distinctio minima delectus.\")",
+    "state": "\"open\"",
+    "pull_request": "false",
+    "repository_full_name": "\"toofytroll/candlekeep-backend\"",
+    "raw": "{}",
+    "last_synced_at": "Time.current"
+   },
+   "errorMessages": [
+    "errors.add(:forgejo_id, :blank) → errors[:forgejo_id] = [\"can't be blank\"], full_messages = [\"Forgejo can't be blank\"]",
+    "errors.add(:forgejo_id, :taken) → errors[:forgejo_id] = [\"has already been taken\"], full_messages = [\"Forgejo has already been taken\"]"
+   ],
+   "associations": [],
+   "traits": [],
+   "columnsNotSetByFactory": []
+  },
+  {
+   "name": "inbound_email",
+   "class": "InboundEmail",
+   "attributes": {
+    "message_id": "generated (e.g. \"<email-1@example.com>\")",
+    "from_email": "generated (e.g. \"kristofer@wisozk-hudson.example\")",
+    "to_email": "\"christophe.hartmann@chartman2-fr.ovh\"",
+    "subject": "\"Re: Suite a notre echange\"",
+    "text_body": "\"Bonjour, ...\"",
+    "received_at": "Time.current",
+    "raw": "{}"
+   },
+   "errorMessages": [
+    "errors.add(:message_id, :blank) → errors[:message_id] = [\"can't be blank\"], full_messages = [\"Message can't be blank\"]",
+    "errors.add(:message_id, :taken) → errors[:message_id] = [\"has already been taken\"], full_messages = [\"Message has already been taken\"]",
+    "errors.add(:from_email, :blank) → errors[:from_email] = [\"can't be blank\"], full_messages = [\"From email can't be blank\"]"
+   ],
+   "associations": [],
+   "traits": [],
+   "columnsNotSetByFactory": []
+  },
+  {
+   "name": "jenkins_build",
+   "class": "JenkinsBuild",
+   "attributes": {
+    "number": "generated (e.g. 1)",
+    "result": "\"SUCCESS\"",
+    "built_at": "Time.current",
+    "duration_ms": "60000",
+    "raw": "{}"
+   },
+   "errorMessages": [
+    "errors.add(:jenkins_job, :blank) → errors[:jenkins_job] = [\"can't be blank\"], full_messages = [\"Jenkins job can't be blank\"]",
+    "errors.add(:number, :blank) → errors[:number] = [\"can't be blank\"], full_messages = [\"Number can't be blank\"]",
+    "errors.add(:number, :taken) → errors[:number] = [\"has already been taken\"], full_messages = [\"Number has already been taken\"]"
+   ],
+   "associations": [
+    "jenkins_job"
+   ],
+   "traits": [],
+   "columnsNotSetByFactory": []
+  },
+  {
+   "name": "jenkins_job",
+   "class": "JenkinsJob",
+   "attributes": {
+    "jenkins_name": "generated (e.g. \"job-1\")",
+    "url": "\"https://jenkins.chartman2-fr.ovh/job/job-1/\"",
+    "color": "\"blue\"",
+    "last_build_number": "42",
+    "last_build_result": "\"SUCCESS\"",
+    "last_build_at": "Time.current",
+    "raw": "{}",
+    "last_synced_at": "Time.current"
+   },
+   "errorMessages": [
+    "errors.add(:jenkins_name, :blank) → errors[:jenkins_name] = [\"can't be blank\"], full_messages = [\"Jenkins name can't be blank\"]",
+    "errors.add(:jenkins_name, :taken) → errors[:jenkins_name] = [\"has already been taken\"], full_messages = [\"Jenkins name has already been taken\"]",
+    "errors.add(:builds, :invalid) → errors[:builds] = [\"is invalid\"], full_messages = [\"Builds is invalid\"]"
+   ],
+   "associations": [],
+   "traits": [],
+   "columnsNotSetByFactory": []
+  },
+  {
+   "name": "open_project_work_package",
+   "class": "OpenProjectWorkPackage",
+   "attributes": {
+    "openproject_id": "generated (e.g. 1)",
+    "subject": "generated (e.g. \"Et possimus quia commodi.\")",
+    "status": "\"New\"",
+    "work_package_type": "\"Task\"",
+    "project_name": "\"Candlekeep\"",
+    "raw": "{}",
+    "last_synced_at": "Time.current"
+   },
+   "errorMessages": [
+    "errors.add(:openproject_id, :blank) → errors[:openproject_id] = [\"can't be blank\"], full_messages = [\"Openproject can't be blank\"]",
+    "errors.add(:openproject_id, :taken) → errors[:openproject_id] = [\"has already been taken\"], full_messages = [\"Openproject has already been taken\"]"
+   ],
+   "associations": [],
+   "traits": [],
+   "columnsNotSetByFactory": []
+  },
+  {
+   "name": "project_repository",
+   "class": "ProjectRepository",
+   "attributes": {
+    "forgejo_owner": "\"toofytroll\"",
+    "forgejo_name": "generated (e.g. \"repo-1\")"
+   },
+   "errorMessages": [
+    "errors.add(:project, :blank) → errors[:project] = [\"can't be blank\"], full_messages = [\"Project can't be blank\"]",
+    "errors.add(:forgejo_owner, :blank) → errors[:forgejo_owner] = [\"can't be blank\"], full_messages = [\"Forgejo owner can't be blank\"]",
+    "errors.add(:forgejo_name, :blank) → errors[:forgejo_name] = [\"can't be blank\"], full_messages = [\"Forgejo name can't be blank\"]",
+    "errors.add(:forgejo_name, :taken) → errors[:forgejo_name] = [\"has already been taken\"], full_messages = [\"Forgejo name has already been taken\"]",
+    "errors.add(:jenkins_job_name, :not_found) → errors[:jenkins_job_name] = [\"not found\"], full_messages = [\"Jenkins job name not found\"]"
+   ],
+   "associations": [
+    "project"
+   ],
+   "traits": [],
+   "columnsNotSetByFactory": [
+    "jenkins_job_name=nil",
+    "sonarqube_main_project_key=nil",
+    "sonarqube_develop_project_key=nil",
+    "sonarqube_provisioned_at=nil",
+    "openproject_project_name=nil"
+   ]
+  },
+  {
+   "name": "project",
+   "class": "Project",
+   "attributes": {
+    "name": "generated (e.g. \"Schroeder-Schamberger\")",
+    "description": "generated (e.g. \"Visionary optimal benchmark\")",
+    "context": "generated (e.g. \"Saepe quia provident. Qui aut ut. Inventore et saepe.\")",
+    "dolibarr_id": "generated (e.g. 3)"
+   },
+   "errorMessages": [
+    "errors.add(:name, :blank) → errors[:name] = [\"can't be blank\"], full_messages = [\"Name can't be blank\"]",
+    "errors.add(:dolibarr_id, :blank) → errors[:dolibarr_id] = [\"can't be blank\"], full_messages = [\"Dolibarr can't be blank\"]",
+    "errors.add(:dolibarr_id, :not_found) → errors[:dolibarr_id] = [\"not found\"], full_messages = [\"Dolibarr not found\"]",
+    "errors.add(:repositories, :invalid) → errors[:repositories] = [\"is invalid\"], full_messages = [\"Repositories is invalid\"]",
+    "errors.add(:report_generation_jobs, :invalid) → errors[:report_generation_jobs] = [\"is invalid\"], full_messages = [\"Report generation jobs is invalid\"]"
+   ],
+   "associations": [],
+   "traits": [],
+   "columnsNotSetByFactory": []
+  },
+  {
+   "name": "prospect",
+   "class": "Prospect",
+   "attributes": {
+    "siren": "generated (e.g. \"000000001\")",
+    "name": "generated (e.g. \"Effertz Inc\")",
+    "city": "generated (e.g. \"New Johnnystad\")",
+    "naf_code": "\"6201Z\"",
+    "naf_label": "\"Programmation informatique\"",
+    "email": "generated (e.g. \"lynn.carter@damore.test\")",
+    "contact": "generated (e.g. \"Catharine Tillman\")",
+    "stage": "\"to_contact\""
+   },
+   "errorMessages": [
+    "errors.add(:name, :blank) → errors[:name] = [\"can't be blank\"], full_messages = [\"Name can't be blank\"]",
+    "errors.add(:siren, :taken) → errors[:siren] = [\"has already been taken\"], full_messages = [\"Siren has already been taken\"]",
+    "errors.add(:probability, :not_a_number) → errors[:probability] = [\"is not a number\"], full_messages = [\"Probability is not a number\"]",
+    "errors.add(:activities, :invalid) → errors[:activities] = [\"is invalid\"], full_messages = [\"Activities is invalid\"]",
+    "errors.add(:email_drafts, :invalid) → errors[:email_drafts] = [\"is invalid\"], full_messages = [\"Email drafts is invalid\"]"
+   ],
+   "associations": [],
+   "traits": [],
+   "columnsNotSetByFactory": [
+    "headcount_range=nil",
+    "revenue=nil",
+    "revenue_year=nil",
+    "notes=nil",
+    "potential_amount=nil",
+    "probability=nil",
+    "follow_up_date=nil",
+    "last_email_sent_at=nil",
+    "phone=nil",
+    "website=nil"
+   ]
+  },
+  {
+   "name": "report_generation_job",
+   "class": "ReportGenerationJob",
+   "attributes": {
+    "report_type": "\"progress\"",
+    "status": "\"pending\"",
+    "period_start": "\"2026-08-01\"",
+    "period_end": "\"2026-08-26\""
+   },
+   "errorMessages": [
+    "errors.add(:project, :blank) → errors[:project] = [\"can't be blank\"], full_messages = [\"Project can't be blank\"]",
+    "errors.add(:report_type, :blank) → errors[:report_type] = [\"can't be blank\"], full_messages = [\"Report type can't be blank\"]"
+   ],
+   "associations": [
+    "project"
+   ],
+   "traits": [
+    "pending",
+    "running",
+    "completed",
+    "failed"
+   ],
+   "columnsNotSetByFactory": [
+    "responsible_name=nil",
+    "result=nil",
+    "error_message=nil",
+    "started_at=nil",
+    "finished_at=nil"
+   ]
+  },
+  {
+   "name": "sales_exercise_attempt",
+   "class": "SalesExerciseAttempt",
+   "attributes": {
+    "answer_text": "\"Ma réponse de test\"",
+    "score": "80",
+    "passed": "true",
+    "feedback": "\"Bon travail\""
+   },
+   "errorMessages": [
+    "errors.add(:sales_exercise, :blank) → errors[:sales_exercise] = [\"can't be blank\"], full_messages = [\"Sales exercise can't be blank\"]",
+    "errors.add(:answer_text, :blank) → errors[:answer_text] = [\"can't be blank\"], full_messages = [\"Answer text can't be blank\"]",
+    "errors.add(:score, :not_a_number) → errors[:score] = [\"is not a number\"], full_messages = [\"Score is not a number\"]"
+   ],
+   "associations": [
+    "sales_exercise"
+   ],
+   "traits": [],
+   "columnsNotSetByFactory": [
+    "strengths=nil",
+    "improvements=nil"
+   ]
+  },
+  {
+   "name": "sales_exercise",
+   "class": "SalesExercise",
+   "attributes": {
+    "slug": "generated (e.g. \"exercise-1\")",
+    "prompt": "\"Énoncé de test\"",
+    "exercise_type": "\"written_graded\"",
+    "grading_rubric": "\"Critère de test\"",
+    "position": "generated (e.g. 1)"
+   },
+   "errorMessages": [
+    "errors.add(:sales_lesson, :blank) → errors[:sales_lesson] = [\"can't be blank\"], full_messages = [\"Sales lesson can't be blank\"]",
+    "errors.add(:slug, :blank) → errors[:slug] = [\"can't be blank\"], full_messages = [\"Slug can't be blank\"]",
+    "errors.add(:slug, :taken) → errors[:slug] = [\"has already been taken\"], full_messages = [\"Slug has already been taken\"]",
+    "errors.add(:prompt, :blank) → errors[:prompt] = [\"can't be blank\"], full_messages = [\"Prompt can't be blank\"]",
+    "errors.add(:position, :blank) → errors[:position] = [\"can't be blank\"], full_messages = [\"Position can't be blank\"]",
+    "errors.add(:position, :taken) → errors[:position] = [\"has already been taken\"], full_messages = [\"Position has already been taken\"]",
+    "errors.add(:grading_rubric, :blank) → errors[:grading_rubric] = [\"can't be blank\"], full_messages = [\"Grading rubric can't be blank\"]",
+    "errors.add(:sales_exercise_attempts, :invalid) → errors[:sales_exercise_attempts] = [\"is invalid\"], full_messages = [\"Sales exercise attempts is invalid\"]"
+   ],
+   "associations": [
+    "sales_lesson"
+   ],
+   "traits": [
+    "self_reported",
+    "written_graded"
+   ],
+   "columnsNotSetByFactory": [
+    "example_answer=nil"
+   ]
+  },
+  {
+   "name": "sales_lesson",
+   "class": "SalesLesson",
+   "attributes": {
+    "slug": "generated (e.g. \"lesson-1\")",
+    "title": "\"Leçon de test\"",
+    "content": "\"Contenu de test\"",
+    "position": "generated (e.g. 1)"
+   },
+   "errorMessages": [
+    "errors.add(:sales_level, :blank) → errors[:sales_level] = [\"can't be blank\"], full_messages = [\"Sales level can't be blank\"]",
+    "errors.add(:slug, :blank) → errors[:slug] = [\"can't be blank\"], full_messages = [\"Slug can't be blank\"]",
+    "errors.add(:slug, :taken) → errors[:slug] = [\"has already been taken\"], full_messages = [\"Slug has already been taken\"]",
+    "errors.add(:title, :blank) → errors[:title] = [\"can't be blank\"], full_messages = [\"Title can't be blank\"]",
+    "errors.add(:content, :blank) → errors[:content] = [\"can't be blank\"], full_messages = [\"Content can't be blank\"]",
+    "errors.add(:position, :blank) → errors[:position] = [\"can't be blank\"], full_messages = [\"Position can't be blank\"]",
+    "errors.add(:position, :taken) → errors[:position] = [\"has already been taken\"], full_messages = [\"Position has already been taken\"]",
+    "errors.add(:sales_exercises, :invalid) → errors[:sales_exercises] = [\"is invalid\"], full_messages = [\"Sales exercises is invalid\"]"
+   ],
+   "associations": [
+    "sales_level"
+   ],
+   "traits": [],
+   "columnsNotSetByFactory": [
+    "tips=nil"
+   ]
+  },
+  {
+   "name": "sales_level",
+   "class": "SalesLevel",
+   "attributes": {
+    "slug": "generated (e.g. \"level-1\")",
+    "title": "\"Niveau de test\"",
+    "description": "\"Description de test\"",
+    "position": "generated (e.g. 1)"
+   },
+   "errorMessages": [
+    "errors.add(:slug, :blank) → errors[:slug] = [\"can't be blank\"], full_messages = [\"Slug can't be blank\"]",
+    "errors.add(:slug, :taken) → errors[:slug] = [\"has already been taken\"], full_messages = [\"Slug has already been taken\"]",
+    "errors.add(:title, :blank) → errors[:title] = [\"can't be blank\"], full_messages = [\"Title can't be blank\"]",
+    "errors.add(:position, :blank) → errors[:position] = [\"can't be blank\"], full_messages = [\"Position can't be blank\"]",
+    "errors.add(:position, :taken) → errors[:position] = [\"has already been taken\"], full_messages = [\"Position has already been taken\"]",
+    "errors.add(:sales_lessons, :invalid) → errors[:sales_lessons] = [\"is invalid\"], full_messages = [\"Sales lessons is invalid\"]"
+   ],
+   "associations": [],
+   "traits": [],
+   "columnsNotSetByFactory": []
+  },
+  {
+   "name": "sonar_qube_project",
+   "class": "SonarQubeProject",
+   "attributes": {
+    "project_key": "generated (e.g. \"project-1\")",
+    "name": "generated (e.g. \"Biodex\")",
+    "measures": "{\"code_smells\"=>\"3\", \"bugs\"=>\"0\"}",
+    "raw": "{}",
+    "last_synced_at": "Time.current"
+   },
+   "errorMessages": [
+    "errors.add(:project_key, :blank) → errors[:project_key] = [\"can't be blank\"], full_messages = [\"Project key can't be blank\"]",
+    "errors.add(:project_key, :taken) → errors[:project_key] = [\"has already been taken\"], full_messages = [\"Project key has already been taken\"]"
+   ],
+   "associations": [],
+   "traits": [],
+   "columnsNotSetByFactory": [
+    "quality_gate_status=nil"
+   ]
+  },
+  {
+   "name": "sync_run",
+   "class": "SyncRun",
+   "attributes": {
+    "source": "\"dolibarr_thirdparties\"",
+    "status": "\"running\"",
+    "started_at": "Time.current"
+   },
+   "errorMessages": [
+    "errors.add(:source, :blank) → errors[:source] = [\"can't be blank\"], full_messages = [\"Source can't be blank\"]"
+   ],
+   "associations": [],
+   "traits": [
+    "running",
+    "success",
+    "failed"
+   ],
+   "columnsNotSetByFactory": [
+    "finished_at=nil",
+    "records_synced=nil",
+    "error_message=nil"
+   ]
+  },
+  {
+   "name": "user",
+   "class": "User",
+   "attributes": {
+    "email": "generated (e.g. \"jacques.heathcote@hermann.test\")",
+    "password": "generated (e.g. \"6YLiFmlkE\")"
+   },
+   "errorMessages": [
+    "errors.add(:email, :blank) → errors[:email] = [\"can't be blank\"], full_messages = [\"Email can't be blank\"]",
+    "errors.add(:email, :taken) → errors[:email] = [\"has already been taken\"], full_messages = [\"Email has already been taken\"]",
+    "errors.add(:email, :invalid) → errors[:email] = [\"is invalid\"], full_messages = [\"Email is invalid\"]",
+    "errors.add(:password, :blank) → errors[:password] = [\"can't be blank\"], full_messages = [\"Password can't be blank\"]",
+    "errors.add(:password, :confirmation) → errors[:password] = [\"doesn't match Password\"], full_messages = [\"Password doesn't match Password\"]",
+    "errors.add(:access_tokens, :invalid) → errors[:access_tokens] = [\"is invalid\"], full_messages = [\"Access tokens is invalid\"]"
+   ],
+   "associations": [],
+   "traits": [
+    "confirmed"
+   ],
+   "columnsNotSetByFactory": [
+    "encrypted_password=\"\"",
+    "reset_password_token=nil",
+    "reset_password_sent_at=nil",
+    "remember_created_at=nil",
+    "sign_in_count=\"0\"",
+    "current_sign_in_at=nil",
+    "last_sign_in_at=nil",
+    "current_sign_in_ip=nil",
+    "last_sign_in_ip=nil",
+    "confirmation_token=nil",
+    "confirmed_at=nil",
+    "confirmation_sent_at=nil",
+    "unconfirmed_email=nil",
+    "failed_attempts=\"0\"",
+    "unlock_token=nil",
+    "locked_at=nil"
+   ]
+  }
+ ],
+ "specSupport": [
+  {
+   "file": "spec/support/body_parser_helper.rb",
+   "defs": [
+    "parsed_body"
+   ],
+   "includes": [
+    "BodyParserHelper (type: :request)"
+   ],
+   "requires": [],
+   "calls": [
+    "JSON.parse(response.body, { symbolize_names: true })"
+   ]
+  },
+  {
+   "file": "spec/support/devise_api_token_helper.rb",
+   "defs": [
+    "authentication_headers_for(resource_owner, token = nil, token_type = :access_token)"
+   ],
+   "includes": [
+    "DeviseApiTokenHelper (type: :request)"
+   ],
+   "requires": [],
+   "calls": []
+  },
+  {
+   "file": "spec/support/factory_bot.rb",
+   "defs": [],
+   "includes": [
+    "FactoryBot::Syntax::Methods"
+   ],
+   "requires": [],
+   "calls": []
+  },
+  {
+   "file": "spec/support/shoulda_matchers.rb",
+   "defs": [],
+   "includes": [],
+   "requires": [],
+   "calls": []
+  },
+  {
+   "file": "spec/support/sidekiq.rb",
+   "defs": [],
+   "includes": [],
+   "requires": [
+    "sidekiq/testing"
+   ],
+   "calls": [
+    "Sidekiq::Testing.fake!"
+   ]
+  },
+  {
+   "file": "spec/support/webmock.rb",
+   "defs": [],
+   "includes": [],
+   "requires": [
+    "webmock/rspec"
+   ],
+   "calls": [
+    "WebMock.disable_net_connect!(allow_localhost: true)"
+   ]
+  }
+ ],
+ "notAvailable": [
+  "travel_to / freeze_time (ActiveSupport::Testing::TimeHelpers)",
+  "have_enqueued_job / ActiveJob::TestHelper"
+ ],
+ "baseClasses": [
+  {
+   "class": "ApplicationService",
+   "superclass": "Object",
+   "new": "ApplicationService.new()",
+   "publicMethods": [],
+   "classMethods": [
+    "self.call(...)"
+   ]
+  },
+  {
+   "class": "ServiceResult",
+   "superclass": "Object",
+   "new": "ServiceResult.new(success:, data: …, errors: …)",
+   "publicMethods": [
+    "data()",
+    "errors()",
+    "failure?()",
+    "success?()"
+   ],
+   "classMethods": []
+  },
+  {
+   "class": "ApplicationClient",
+   "superclass": "Object",
+   "new": "ApplicationClient.new(base_url:, headers: …, timeout: …, open_timeout: …)",
+   "publicMethods": [],
+   "classMethods": []
+  },
+  {
+   "class": "ApplicationClient::Error",
+   "superclass": "StandardError",
+   "new": "ApplicationClient::Error.new(message, status: …)",
+   "publicMethods": [
+    "status()"
+   ],
+   "classMethods": []
+  },
+  {
+   "class": "ApplicationJob",
+   "superclass": "ActiveJob::Base",
+   "new": "ApplicationJob.new(*arguments, **)",
+   "publicMethods": [],
+   "classMethods": []
+  }
+ ],
+ "jobs": {
+  "activeJobAdapter": "ActiveJob::QueueAdapters::SidekiqAdapter"
+ },
+ "i18n": {
+  "defaultLocale": "en",
+  "available": [
+   "en",
+   "fr"
+  ]
+ }
+}
