@@ -68,6 +68,16 @@ export const changeColor = (change: number | null): string | undefined => {
 }
 ```
 
+- **Jamais de template literal imbriqué** (`` `${a} · ${t(`x.${b}`)}` ``) :
+  SonarQube le compte aussi comme violation (`typescript:S4624`, porte qualité
+  en échec sur candlekeep-frontend #49). Sors la partie intérieure dans une
+  variable ou une petite fonction :
+
+```ts
+const romeLabel = (code: string) => t(`companies.hiring.rome.${code}`)
+const title = `${code} · ${romeLabel(code)}`
+```
+
 # Tests
 
 - Unitaires : Vitest, fichiers `*.spec.ts` colocalisés avec le code testé
