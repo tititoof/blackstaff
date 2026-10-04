@@ -78,6 +78,16 @@ const romeLabel = (code: string) => t(`companies.hiring.rome.${code}`)
 const title = `${code} · ${romeLabel(code)}`
 ```
 
+- **Tout `<th>` porte un `scope`** (`scope="col"` pour un en-tête de colonne,
+  `scope="row"` pour un en-tête de ligne), y compris dans un `<table>` brut
+  à l'intérieur d'un composant Vuetify : SonarQube le compte comme violation
+  (`Web:TableHeaderHasIdOrScopeCheck`, 7 violations et porte qualité en échec
+  sur candlekeep-frontend #51).
+
+```vue
+<th scope="col">{{ t('llm_models.candidates.model') }}</th>
+```
+
 # Tests
 
 - Unitaires : Vitest, fichiers `*.spec.ts` colocalisés avec le code testé
