@@ -24,11 +24,13 @@ n8n import:workflow --input=blackstaff-code-generator.json
 
 **Identifiants** (rattachés ensuite aux nœuds correspondants) :
 
-- `NVIDIA Nemotron account` (API NVIDIA)
-- `Groq account`
-- `Google Gemini(PaLM) Api account`
-- `Anthropic account`
-- `Ollama account` (workflows `qwen-*`)
+- `NVIDIA Nemotron account` (API NVIDIA) : génération des fichiers, et secours
+  des workflows `qwen-assemble-*`
+- `Groq account` : secours de la génération, génération des tests
+- `Google Gemini(PaLM) Api account` (nom par défaut de l'identifiant Gemini dans
+  n8n) : planification, décomposition, relecture du plan
+- `Anthropic account` : analyse fonctionnelle et fiches de faits (Claude Haiku)
+- `Ollama account` : workflows `qwen-*`
 
 **Tables de données n8n** :
 
