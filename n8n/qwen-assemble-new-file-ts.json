@@ -1,0 +1,642 @@
+{
+  "name": "qwen-assemble-new-file-ts — New Pinia Store Assembler",
+  "description": "TS/Vue companion to qwen-assemble-new-file, scoped to new Options-API Pinia stores: generates each action independently via local qwen2.5-coder:7b (NVIDIA fallback), assembles into actions:{}, syntax-checks via TypeScript compiler API, writes via docker-b",
+  "nodes": [
+    {
+      "id": "bc7674f6-d200-43e7-8c39-b8e696310698",
+      "name": "POST /qwen-assemble-new-file-ts",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        240,
+        300
+      ],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "qwen-assemble-new-file-ts",
+        "responseMode": "responseNode",
+        "authentication": "none",
+        "options": {}
+      },
+      "webhookId": "b800541b-1c74-49d4-a411-6f8d8d261a85"
+    },
+    {
+      "id": "032054a5-662d-4524-9389-652637e0cccf",
+      "name": "Normalize Input",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1140,
+        300
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "language": "javaScript",
+        "jsCode": "var body = $input.first().json.body || {};\nvar wrapper = body.wrapper || {};\nreturn [{ json: {\n  project: body.project || '',\n  container: body.container || 'candlekeep-frontend-frontend-1',\n  targetFile: body.targetFile || '',\n  wrapper: { before: wrapper.before || '', after: wrapper.after || '' },\n  pieces: body.pieces || [],\n  systemPrompt: body.systemPrompt || 'You are a senior Vue 3 / Nuxt / TypeScript engineer working in this exact codebase (Pinia Options-API stores). Output ONLY the action method source, as a plain object-method (name(args) { ... } or async name(args) { ... }) - no function keyword, no arrow function, no surrounding actions/defineStore wrapper, no markdown fences, no explanation.'\n} }];"
+      }
+    },
+    {
+      "id": "7373fb66-0e09-4a40-8f45-33998eb5ec97",
+      "name": "Split Pieces",
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        1400,
+        300
+      ],
+      "parameters": {
+        "fieldToSplitOut": "pieces",
+        "include": "noOtherFields",
+        "options": {
+          "destinationFieldName": "piece"
+        }
+      }
+    },
+    {
+      "id": "860d8850-8d82-481d-a56d-e125d9ca7409",
+      "name": "Generate Piece",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        1660,
+        300
+      ],
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.piece.taskDescription }}",
+        "hasOutputParser": false,
+        "needsFallback": true,
+        "options": {
+          "systemMessage": "={{ $('Normalize Input').first().json.systemPrompt }}"
+        }
+      }
+    },
+    {
+      "id": "45cc59d9-d005-4ad1-9abc-0c8bb9988ea5",
+      "name": "Ollama Chat Model (qwen2.5-coder)",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOllama",
+      "typeVersion": 1,
+      "position": [
+        1660,
+        460
+      ],
+      "parameters": {
+        "model": "qwen2.5-coder:7b",
+        "options": {
+          "think": false,
+          "temperature": 0.2,
+          "keepAlive": "2m",
+          "numCtx": 4096,
+          "numPredict": 1024
+        }
+      },
+      "credentials": {
+        "ollamaApi": {
+          "id": "AQp4Pjr8jFgtfA6b",
+          "name": "Ollama account"
+        }
+      }
+    },
+    {
+      "id": "d3763ec1-8636-4127-8d45-7e22976a9571",
+      "name": "NVIDIA Chat Model (fallback)",
+      "type": "@n8n/n8n-nodes-langchain.lmChatNvidia",
+      "typeVersion": 1,
+      "position": [
+        1660,
+        620
+      ],
+      "parameters": {
+        "model": "={{ ((($('Merge LLM config').first().json.llm_config) || []).filter(r => r.usage_key === 'qwen-assemble-ts.fallback' && r.active).sort((a, b) => a.rank - b.rank)[0] || {}).model || 'nvidia/nemotron-3-ultra-550b-a55b' }}",
+        "options": {
+          "temperature": 0.2
+        }
+      },
+      "credentials": {
+        "nvidiaApi": {
+          "id": "KWoELc2Sj6q9ufvV",
+          "name": "NVIDIA Nemotron account"
+        }
+      }
+    },
+    {
+      "id": "0197b7c1-3a54-475b-8382-079b554db666",
+      "name": "Assemble File",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1920,
+        300
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "language": "javaScript",
+        "jsCode": "var config = $('Normalize Input').first().json;\nvar pieceMeta = $('Split Pieces').all();\nvar outputs = $input.all();\n\nfunction cleanPiece(raw) {\n  return (raw || '').replace(/^```[a-zA-Z]*\\n?/, '').replace(/```\\s*$/, '').trim();\n}\n\nvar results = pieceMeta.map(function(m, i) {\n  var piece = m.json.piece;\n  var raw = (outputs[i] && outputs[i].json && outputs[i].json.output) || '';\n  var cleaned = cleanPiece(raw);\n  var nameEscaped = piece.name.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&');\n  var pattern = new RegExp('^(async\\\\s+)?' + nameEscaped + '\\\\s*\\\\(');\n  var valid = pattern.test(cleaned);\n  return {\n    name: piece.name,\n    order: piece.order != null ? piece.order : i,\n    prefix: piece.prefix || '',\n    body: cleaned,\n    valid: valid,\n    reason: valid ? null : (\"response did not start with '\" + piece.name + \"(' (or 'async \" + piece.name + \"(') after stripping markdown fences\")\n  };\n});\n\nvar invalid = results.filter(function(r) { return !r.valid; });\nif (invalid.length > 0) {\n  return [{ json: {\n    valid: false,\n    errors: invalid.map(function(r) { return r.name + ': ' + r.reason; }),\n    pieceResults: results\n  } }];\n}\n\nresults.sort(function(a, b) { return a.order - b.order; });\n\nfunction reindent(src, indent) {\n  return src.split('\\n').map(function(l) { return l.trim() === '' ? '' : indent + l; }).join('\\n');\n}\n\nvar indent = '    ';\nvar body = results.map(function(r) {\n  var prefixLine = r.prefix ? (indent + r.prefix.trim() + '\\n\\n') : '';\n  return prefixLine + reindent(r.body, indent) + ',';\n}).join('\\n\\n');\n\nvar content = config.wrapper.before + body + '\\n' + config.wrapper.after;\n\nreturn [{ json: {\n  valid: true,\n  content: content,\n  pieceResults: results,\n  targetFile: config.targetFile,\n  container: config.container\n} }];"
+      }
+    },
+    {
+      "id": "6b370985-f0de-4c3e-9447-2fa9e3c67072",
+      "name": "Valid?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        2180,
+        300
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.valid }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      }
+    },
+    {
+      "id": "48e8b323-fbef-4bd6-8bf1-c77f41355855",
+      "name": "Build Write Command",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2440,
+        200
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "language": "javaScript",
+        "jsCode": "var TS_SYNTAX_CHECK_SRC = \"#!/usr/bin/env node\\n'use strict';\\nconst ts = require('typescript');\\nconst fs = require('fs');\\nconst file = process.argv[2];\\nconst source = fs.readFileSync(file, 'utf8');\\nconst sourceFile = ts.createSourceFile(file, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);\\nconst diagnostics = sourceFile.parseDiagnostics || [];\\nif (diagnostics.length > 0) {\\n  console.error('Syntax error: ' + diagnostics[0].messageText);\\n  process.exit(1);\\n}\\nconsole.log('Syntax OK');\\nprocess.exit(0);\\n\";\nvar item = $json;\nvar checkB64 = Buffer.from(TS_SYNTAX_CHECK_SRC).toString('base64');\nvar scriptB64 = Buffer.from(item.content).toString('base64');\nvar sh = \"mkdir -p \\\"$(dirname '\" + item.targetFile + \"')\\\" tmp/qwen_assemble && echo '\" + checkB64 + \"' | base64 -d > tmp/qwen_assemble/ts_syntax_check.cjs && echo '\" + scriptB64 + \"' | base64 -d > tmp/qwen_assemble/candidate.ts && node tmp/qwen_assemble/ts_syntax_check.cjs tmp/qwen_assemble/candidate.ts && cp tmp/qwen_assemble/candidate.ts '\" + item.targetFile + \"'\";\nreturn [{ json: {\n  targetFile: item.targetFile,\n  content: item.content,\n  dockerBridgePayload: { container: item.container, args: ['sh', '-c', sh] }\n} }];"
+      }
+    },
+    {
+      "id": "9dd82735-2d5a-4fe3-a9aa-818e975306db",
+      "name": "Call docker-bridge",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        2700,
+        200
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "http://docker-bridge:3001/exec",
+        "authentication": "none",
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.dockerBridgePayload }}",
+        "options": {
+          "timeout": 60000
+        }
+      }
+    },
+    {
+      "id": "e2267871-27aa-4f75-ae3a-221f9c7ef42a",
+      "name": "Parse Result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2960,
+        200
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "language": "javaScript",
+        "jsCode": "var resp = $input.first().json;\nvar targetFile = $('Build Write Command').first().json.targetFile;\nvar content = $('Build Write Command').first().json.content;\nvar ok = resp.exitCode === 0;\nreturn [{ json: {\n  filesWritten: ok ? 1 : 0,\n  generatedFiles: ok ? [{ path: targetFile, content: content, language: 'typescript' }] : [],\n  error: ok ? null : (resp.stderr || resp.stdout || ('docker-bridge exec failed, exitCode ' + resp.exitCode)),\n  summary: ok ? ('1 fichier assemble et ecrit (' + targetFile + ')') : '0 fichier ecrit - echec syntaxe ou docker-bridge'\n} }];"
+      }
+    },
+    {
+      "id": "87ea684e-a345-456b-a6a9-658ca5b00b3d",
+      "name": "Respond Result",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        3220,
+        200
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {}
+      }
+    },
+    {
+      "id": "58a6d9d2-0849-4b8b-939f-098c1cb34364",
+      "name": "Build Invalid Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2440,
+        460
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "language": "javaScript",
+        "jsCode": "var item = $json;\nreturn [{ json: {\n  filesWritten: 0,\n  generatedFiles: [],\n  error: item.errors.join('; '),\n  pieceResults: item.pieceResults,\n  summary: '0 fichier ecrit - ' + item.errors.length + ' piece(s) invalide(s)'\n} }];"
+      }
+    },
+    {
+      "id": "4f770574-3dc3-40e0-8ff4-3d388d4fa770",
+      "name": "Respond Invalid",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        2700,
+        460
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {}
+      }
+    },
+    {
+      "id": "018f8b56-592f-4176-ba23-10297cf6049f",
+      "name": "Log Generation",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        2980,
+        380
+      ],
+      "parameters": {
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "bev74G4qXwXk6y8y",
+          "cachedResultName": "llm_generation_log"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "execution_id": "={{ $execution.id }}",
+            "workflow": "qwen-assemble-new-file-ts",
+            "target_file": "={{ $('Normalize Input').first().json.targetFile }}",
+            "method": "={{ ($('Normalize Input').first().json.pieces || []).map(p => p.name).join(',') }}",
+            "model": "qwen2.5-coder:7b",
+            "pieces": "={{ ($('Normalize Input').first().json.pieces || []).length }}",
+            "files_written": "={{ $json.filesWritten || 0 }}",
+            "outcome": "={{ $json.filesWritten > 0 ? 'written' : ((($json.error || '').indexOf('wrapper declares') === 0) ? 'rejected_wrapper' : 'failed') }}",
+            "error": "={{ ($json.error || '').slice(0, 500) }}"
+          },
+          "schema": [
+            {
+              "id": "execution_id",
+              "displayName": "execution_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "workflow",
+              "displayName": "workflow",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "target_file",
+              "displayName": "target_file",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "method",
+              "displayName": "method",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "model",
+              "displayName": "model",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "pieces",
+              "displayName": "pieces",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "files_written",
+              "displayName": "files_written",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "outcome",
+              "displayName": "outcome",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "error",
+              "displayName": "error",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "1da024a8-de9b-43e5-b392-428cf589b3fb",
+      "name": "Load LLM config",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        460,
+        80
+      ],
+      "parameters": {
+        "resource": "row",
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "06IXCOCnqraHjYja"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "workflow_id",
+              "condition": "eq",
+              "keyValue": "={{ $workflow.id }}"
+            }
+          ]
+        },
+        "returnAll": true
+      },
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true
+    },
+    {
+      "id": "3a0a4dbc-ae3a-4e2e-bd46-18a6df3eb1f0",
+      "name": "Aggregate LLM config",
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        680,
+        80
+      ],
+      "parameters": {
+        "aggregate": "aggregateAllItemData",
+        "destinationFieldName": "llm_config",
+        "include": "allFields"
+      }
+    },
+    {
+      "id": "79d185b3-d8c0-4141-9889-a69c6b913cb7",
+      "name": "Merge LLM config",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        900,
+        300
+      ],
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineAll",
+        "options": {}
+      }
+    }
+  ],
+  "connections": {
+    "Normalize Input": {
+      "main": [
+        [
+          {
+            "node": "Split Pieces",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Pieces": {
+      "main": [
+        [
+          {
+            "node": "Generate Piece",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Piece": {
+      "main": [
+        [
+          {
+            "node": "Assemble File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ollama Chat Model (qwen2.5-coder)": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Generate Piece",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "NVIDIA Chat Model (fallback)": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Generate Piece",
+            "type": "ai_languageModel",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Assemble File": {
+      "main": [
+        [
+          {
+            "node": "Valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Valid?": {
+      "main": [
+        [
+          {
+            "node": "Build Write Command",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build Invalid Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Write Command": {
+      "main": [
+        [
+          {
+            "node": "Call docker-bridge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call docker-bridge": {
+      "main": [
+        [
+          {
+            "node": "Parse Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Result": {
+      "main": [
+        [
+          {
+            "node": "Respond Result",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Log Generation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Invalid Response": {
+      "main": [
+        [
+          {
+            "node": "Respond Invalid",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Log Generation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "POST /qwen-assemble-new-file-ts": {
+      "main": [
+        [
+          {
+            "node": "Merge LLM config",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Load LLM config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Load LLM config": {
+      "main": [
+        [
+          {
+            "node": "Aggregate LLM config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate LLM config": {
+      "main": [
+        [
+          {
+            "node": "Merge LLM config",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge LLM config": {
+      "main": [
+        [
+          {
+            "node": "Normalize Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": true
+  },
+  "pinData": {},
+  "tags": []
+}

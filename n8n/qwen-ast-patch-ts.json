@@ -1,0 +1,462 @@
+{
+  "name": "qwen-ast-patch-ts — Local Method Patcher (Pinia)",
+  "description": "Companion to qwen-ast-patch, scoped to Vue/TS: calls local qwen2.5-coder:7b for a single Pinia store action, then patches it into an existing Options-API defineStore(...) actions:{} object via AST-located insert/replace (ast_patch_ts.cjs, TypeScript compi",
+  "nodes": [
+    {
+      "id": "e2ee2781-1db7-49d8-b393-6ff73f5cb30e",
+      "name": "POST /qwen-ast-patch-ts",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        240,
+        300
+      ],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "qwen-ast-patch-ts",
+        "responseMode": "responseNode",
+        "authentication": "none",
+        "options": {}
+      },
+      "webhookId": "94f61a7c-961a-4346-9ea5-80d5f09331b9"
+    },
+    {
+      "id": "6caca967-3b3e-4ead-8415-c929bc8b9101",
+      "name": "Normalize Input",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        500,
+        300
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "var body = $input.first().json.body || {};\nvar project = body.project || 'candlekeep/candlekeep-frontend';\nvar container = body.container || 'candlekeep-frontend-frontend-1';\nvar targetFile = body.targetFile || '';\nvar method = body.method || '';\nvar insertAfter = body.insertAfter || null;\nvar systemPrompt = body.systemPrompt || 'You are a senior Vue 3 / Nuxt / TypeScript engineer working in this exact codebase (Pinia Options-API stores). Follow the existing code style precisely. Output ONLY the action method source code, as a plain object-method (name(args) { ... } or async name(args) { ... }) - no function keyword, no arrow function, no surrounding actions/defineStore wrapper, no markdown fences, no explanation.';\nvar taskDescription = body.taskDescription || '';\nreturn [{ json: {\n  project: project,\n  container: container,\n  targetFile: targetFile,\n  method: method,\n  insertAfter: insertAfter,\n  systemPrompt: systemPrompt,\n  taskDescription: taskDescription\n} }];"
+      }
+    },
+    {
+      "id": "134b218c-5c98-48b2-9cc5-4e3aa792d41f",
+      "name": "Call qwen (Ollama)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        760,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "http://project-ollama:11434/api/chat",
+        "authentication": "none",
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": {
+          "model": "qwen2.5-coder:7b",
+          "messages": [
+            {
+              "role": "system",
+              "content": "={{ $json.systemPrompt }}"
+            },
+            {
+              "role": "user",
+              "content": "={{ $json.taskDescription }}"
+            }
+          ],
+          "stream": false,
+          "think": false,
+          "keep_alive": "2m",
+          "options": {
+            "temperature": 0.2,
+            "seed": 42,
+            "num_ctx": 4096,
+            "num_predict": 1024
+          }
+        },
+        "options": {
+          "timeout": 300000
+        }
+      }
+    },
+    {
+      "id": "054b9117-24a8-4243-ab8a-39d976499f5c",
+      "name": "Extract Method Body",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1020,
+        300
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "var msg = $input.first().json.message;\nvar raw = (msg && msg.content) ? msg.content : '';\nvar cleaned = raw.replace(/^```[a-zA-Z]*\\n?/, '').replace(/```\\s*$/, '').trim();\nvar method = $('Normalize Input').first().json.method;\nvar nameEscaped = method.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&');\nvar pattern = new RegExp('^(async\\\\s+)?' + nameEscaped + '\\\\s*\\\\(');\nvar valid = pattern.test(cleaned);\nreturn [{ json: {\n  methodBody: cleaned,\n  valid: valid,\n  reason: valid ? null : \"qwen response did not start with '\" + method + \"(' (or 'async \" + method + \"(') after stripping markdown fences\"\n} }];"
+      }
+    },
+    {
+      "id": "9618b11a-6591-46da-ae53-97c7c74900af",
+      "name": "Body Valid?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1280,
+        300
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.valid }}",
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              },
+              "rightValue": true
+            }
+          ],
+          "combinator": "and"
+        }
+      }
+    },
+    {
+      "id": "9a4ed02c-93cf-45e5-9f7c-61f4a6ae9d95",
+      "name": "Build Patch Command",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1540,
+        200
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "var AST_PATCH_SRC = \"#!/usr/bin/env node\\n'use strict';\\n\\n// ast_patch_ts.cjs \\u2014 insert or replace a single Pinia store action (a method\\n// inside defineStore(...)'s `actions: { ... }` object literal) in an\\n// existing TypeScript file, without touching anything else in it.\\n//\\n// Design: locate-and-splice, mirroring ast_patch_ruby.rb exactly \\u2014 the\\n// TypeScript compiler API is used only to find the exact source range of\\n// the target action (or, on insert, the last existing action to anchor\\n// after); the rest of the file is never reprinted, so formatting/comments\\n// elsewhere never move. .cjs extension forces CommonJS regardless of the\\n// host package.json's \\\"type\\\": \\\"module\\\".\\n//\\n// Scope (v1): Options-API Pinia stores only \\u2014 defineStore('id', { state,\\n// getters, actions: {...} }) \\u2014 not the setup-function store style, and not\\n// <script setup> component functions. See llm-specialists' hybrid-dev-loop\\n// skill for why this scope was chosen.\\n//\\n// Usage:\\n//   node ast_patch_ts.cjs --file app/stores/application.ts --method setLocale \\\\\\n//     --body /tmp/new_action.ts [--insert-after otherAction] [--write]\\n//\\n// Output (stdout, JSON, always):\\n//   success: {\\\"ok\\\":true,\\\"action\\\":\\\"replaced\\\"|\\\"inserted\\\",\\\"method\\\":\\\"name\\\",\\\"content\\\":\\\"<full patched file>\\\"}\\n//   failure: {\\\"ok\\\":false,\\\"error\\\":\\\"...\\\"}\\n// Exit code 0 on success, 1 on usage/lookup error, 2 on a patch that would\\n// produce invalid TypeScript (caught before anything is written).\\n\\nconst ts = require('typescript');\\nconst fs = require('fs');\\n\\nfunction parseArgs(argv) {\\n  const args = { write: false };\\n  for (let i = 0; i < argv.length; i++) {\\n    const a = argv[i];\\n    if (a === '--file') args.file = argv[++i];\\n    else if (a === '--method') args.method = argv[++i];\\n    else if (a === '--body') args.body = argv[++i];\\n    else if (a === '--insert-after') args.insertAfter = argv[++i];\\n    else if (a === '--write') args.write = true;\\n  }\\n  return args;\\n}\\n\\nfunction failJson(message, code) {\\n  process.stdout.write(JSON.stringify({ ok: false, error: message }) + '\\\\n');\\n  process.exit(code || 1);\\n}\\n\\nconst args = parseArgs(process.argv.slice(2));\\nif (!args.file || !args.method || !args.body) {\\n  failJson('missing required option --file/--method/--body');\\n}\\nif (!fs.existsSync(args.file)) failJson('file not found: ' + args.file);\\nif (!fs.existsSync(args.body)) failJson('body file not found: ' + args.body);\\n\\nconst bodySource = fs.readFileSync(args.body, 'utf8').trim();\\nif (!bodySource) failJson('body is empty');\\n\\nconst nameEscaped = args.method.replace(/[.*+?^${}()|[\\\\]\\\\\\\\]/g, '\\\\\\\\$&');\\nconst bodyPattern = new RegExp('^(async\\\\\\\\s+)?' + nameEscaped + '\\\\\\\\s*\\\\\\\\(');\\nif (!bodyPattern.test(bodySource)) {\\n  failJson(\\n    \\\"body must be a single method starting with '\\\" + args.method + \\\"(' or 'async \\\" +\\n    args.method + \\\"(' (got: \\\" + JSON.stringify(bodySource.slice(0, 40)) + '...)'\\n  );\\n}\\n\\nconst source = fs.readFileSync(args.file, 'utf8');\\nconst scriptKind = args.file.endsWith('.tsx') ? ts.ScriptKind.TSX : ts.ScriptKind.TS;\\nconst sourceFile = ts.createSourceFile(args.file, source, ts.ScriptTarget.Latest, true, scriptKind);\\n\\nfunction findActionsObject(root) {\\n  let found = null;\\n  function visit(n) {\\n    if (found) return;\\n    if (\\n      ts.isCallExpression(n) &&\\n      ts.isIdentifier(n.expression) &&\\n      n.expression.text === 'defineStore'\\n    ) {\\n      const optionsArg = n.arguments[n.arguments.length - 1];\\n      if (optionsArg && ts.isObjectLiteralExpression(optionsArg)) {\\n        for (const prop of optionsArg.properties) {\\n          if (\\n            ts.isPropertyAssignment(prop) &&\\n            ts.isIdentifier(prop.name) &&\\n            prop.name.text === 'actions' &&\\n            ts.isObjectLiteralExpression(prop.initializer)\\n          ) {\\n            found = prop.initializer;\\n            return;\\n          }\\n        }\\n      }\\n    }\\n    ts.forEachChild(n, visit);\\n  }\\n  visit(root);\\n  return found;\\n}\\n\\nconst actionsObj = findActionsObject(sourceFile);\\nif (!actionsObj) {\\n  failJson(\\n    'no defineStore(...) with an actions: { ... } object literal found in file ' +\\n    '(this tool only supports Options-API Pinia stores for now)'\\n  );\\n}\\n\\nfunction findMethods(objLit, name) {\\n  return objLit.properties.filter(function (p) {\\n    return ts.isMethodDeclaration(p) && ts.isIdentifier(p.name) && p.name.text === name;\\n  });\\n}\\n\\nconst matches = findMethods(actionsObj, args.method);\\nif (matches.length > 1) {\\n  failJson(\\\"method '\\\" + args.method + \\\"' is ambiguous (\\\" + matches.length + ' definitions found)');\\n}\\n\\nfunction indentOf(node) {\\n  const start = node.getStart(sourceFile);\\n  const lc = sourceFile.getLineAndCharacterOfPosition(start);\\n  return ' '.repeat(lc.character);\\n}\\n\\n// Mirrors ast_patch_ruby.rb's reindent: prefix every line with `indent`\\n// while preserving each line's own relative whitespace, except line 0 on a\\n// replace (it already sits at the right column via untouched source text).\\nfunction reindent(src, indent, skipFirst) {\\n  const lines = src.split('\\\\n');\\n  return lines\\n    .map(function (l, i) {\\n      if (skipFirst && i === 0) return l;\\n      return l.trim() === '' ? '' : indent + l;\\n    })\\n    .join('\\\\n');\\n}\\n\\nlet action;\\nlet newText;\\nlet start;\\nlet end;\\n\\nif (matches.length === 0) {\\n  const methodProps = actionsObj.properties.filter(function (p) {\\n    return ts.isMethodDeclaration(p);\\n  });\\n  let anchor = null;\\n  if (args.insertAfter) {\\n    const found = findMethods(actionsObj, args.insertAfter);\\n    if (found.length === 0) failJson(\\\"--insert-after target '\\\" + args.insertAfter + \\\"' not found\\\");\\n    anchor = found[found.length - 1];\\n  } else if (methodProps.length) {\\n    anchor = methodProps[methodProps.length - 1];\\n  }\\n\\n  if (anchor) {\\n    const indent = indentOf(anchor);\\n    // Leading comma unconditionally: anchor.getEnd() lands right after its\\n    // closing `}`, BEFORE any pre-existing trailing comma (if the source\\n    // has one) or the closing brace (if it doesn't) \\u2014 inserting \\\",\\\\n\\\\n<new>\\\"\\n    // right there is valid either way: it supplies the separator anchor\\n    // needs, and any comma that already followed anchor now correctly\\n    // trails the newly inserted method instead.\\n    newText = ',\\\\n\\\\n' + reindent(bodySource, indent, false);\\n    start = end = anchor.getEnd();\\n  } else {\\n    // Empty actions object \\u2014 insert right after the opening brace instead\\n    // of before the closing one, so we don't have to reason about the\\n    // closing brace's own pre-existing indentation (same trick as\\n    // ast_patch_ruby.rb's default-anchor fix).\\n    const indent = '        '; // two nesting levels (store object + actions object), 4 spaces each\\n    newText = '\\\\n' + reindent(bodySource, indent, false) + '\\\\n' + indent.slice(0, -4);\\n    start = end = actionsObj.getStart(sourceFile) + 1;\\n  }\\n  action = 'inserted';\\n} else {\\n  const m = matches[0];\\n  start = m.getStart(sourceFile);\\n  end = m.getEnd();\\n  const indent = indentOf(m);\\n  newText = reindent(bodySource, indent, true);\\n  action = 'replaced';\\n}\\n\\nconst patched = source.slice(0, start) + newText + source.slice(end);\\n\\n// safety net: never hand back something that doesn't parse\\nconst patchedFile = ts.createSourceFile(args.file, patched, ts.ScriptTarget.Latest, true, scriptKind);\\nconst diagnostics = patchedFile.parseDiagnostics || [];\\nif (diagnostics.length > 0) {\\n  failJson('patch produced invalid TypeScript, nothing written: ' + diagnostics[0].messageText, 2);\\n}\\n\\nif (args.write) fs.writeFileSync(args.file, patched);\\n\\nprocess.stdout.write(\\n  JSON.stringify({ ok: true, action: action, method: args.method, content: patched }) + '\\\\n'\\n);\\n\";\nvar methodBody = $json.methodBody;\nvar targetFile = $('Normalize Input').first().json.targetFile;\nvar method = $('Normalize Input').first().json.method;\nvar insertAfter = $('Normalize Input').first().json.insertAfter;\nvar container = $('Normalize Input').first().json.container;\nvar scriptB64 = Buffer.from(AST_PATCH_SRC).toString('base64');\nvar bodyB64 = Buffer.from(methodBody).toString('base64');\nvar insertAfterArg = insertAfter ? (\" --insert-after '\" + insertAfter + \"'\") : '';\nvar sh = \"mkdir -p tmp/ast_patch && echo '\" + scriptB64 + \"' | base64 -d > tmp/ast_patch/ast_patch_ts.cjs && echo '\" + bodyB64 + \"' | base64 -d > tmp/ast_patch/new_action.ts && node tmp/ast_patch/ast_patch_ts.cjs --file '\" + targetFile + \"' --method '\" + method + \"'\" + insertAfterArg + \" --body tmp/ast_patch/new_action.ts --write\";\nreturn [{ json: {\n  container: container,\n  targetFile: targetFile,\n  method: method,\n  dockerBridgePayload: { container: container, args: ['sh', '-c', sh] }\n} }];"
+      }
+    },
+    {
+      "id": "059589c3-59df-48c7-9128-abcdd4ec8976",
+      "name": "Call docker-bridge",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        1800,
+        200
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "http://docker-bridge:3001/exec",
+        "authentication": "none",
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.dockerBridgePayload }}",
+        "options": {
+          "timeout": 60000
+        }
+      }
+    },
+    {
+      "id": "1aa100ff-8c65-42b6-b273-99c17d4159c6",
+      "name": "Parse Patch Result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2060,
+        200
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "var resp = $input.first().json;\nvar targetFile = $('Build Patch Command').first().json.targetFile;\nvar method = $('Build Patch Command').first().json.method;\nvar parsed = null;\nvar parseError = null;\ntry { parsed = JSON.parse(resp.stdout); } catch (e) { parseError = e.message; }\nvar ok = resp.exitCode === 0 && parsed && parsed.ok === true;\nreturn [{ json: {\n  filesWritten: ok ? 1 : 0,\n  generatedFiles: ok ? [{ path: targetFile, content: parsed.content, language: 'typescript' }] : [],\n  action: (parsed && parsed.action) ? parsed.action : null,\n  method: method,\n  error: ok ? null : ((parsed && parsed.error) ? parsed.error : (parseError || resp.stderr || ('docker-bridge exec failed, exitCode ' + resp.exitCode))),\n  summary: ok ? ('1 fichier patche (' + parsed.action + ' ' + method + ')') : '0 fichier patche'\n} }];"
+      }
+    },
+    {
+      "id": "75fca758-44a6-4dee-b0bc-9c73070eedbb",
+      "name": "Respond Result",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        2320,
+        200
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {}
+      }
+    },
+    {
+      "id": "652f87a1-22f9-4447-8e66-793533bb4438",
+      "name": "Build Invalid Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1540,
+        480
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "return [{ json: {\n  filesWritten: 0,\n  generatedFiles: [],\n  error: $json.reason,\n  summary: '0 fichier patche - reponse qwen invalide'\n} }];"
+      }
+    },
+    {
+      "id": "d11f78f8-e562-4579-a7ef-7935b1d1f964",
+      "name": "Respond Invalid",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1800,
+        480
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {}
+      }
+    },
+    {
+      "id": "cf0e810a-611c-403d-80c7-837f1d74578b",
+      "name": "Log Generation",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        2320,
+        380
+      ],
+      "parameters": {
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "bev74G4qXwXk6y8y",
+          "cachedResultName": "llm_generation_log"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "execution_id": "={{ $execution.id }}",
+            "workflow": "qwen-ast-patch-ts",
+            "target_file": "={{ $('Normalize Input').first().json.targetFile }}",
+            "method": "={{ $('Normalize Input').first().json.method || '' }}",
+            "model": "qwen2.5-coder:7b",
+            "pieces": "={{ 1 }}",
+            "files_written": "={{ $json.filesWritten || 0 }}",
+            "outcome": "={{ $json.filesWritten > 0 ? 'written' : ((($json.error || '').indexOf('wrapper declares') === 0) ? 'rejected_wrapper' : 'failed') }}",
+            "error": "={{ ($json.error || '').slice(0, 500) }}"
+          },
+          "schema": [
+            {
+              "id": "execution_id",
+              "displayName": "execution_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "workflow",
+              "displayName": "workflow",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "target_file",
+              "displayName": "target_file",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "method",
+              "displayName": "method",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "model",
+              "displayName": "model",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "pieces",
+              "displayName": "pieces",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "files_written",
+              "displayName": "files_written",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "outcome",
+              "displayName": "outcome",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "error",
+              "displayName": "error",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "onError": "continueRegularOutput"
+    }
+  ],
+  "connections": {
+    "POST /qwen-ast-patch-ts": {
+      "main": [
+        [
+          {
+            "node": "Normalize Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Input": {
+      "main": [
+        [
+          {
+            "node": "Call qwen (Ollama)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call qwen (Ollama)": {
+      "main": [
+        [
+          {
+            "node": "Extract Method Body",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Method Body": {
+      "main": [
+        [
+          {
+            "node": "Body Valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Body Valid?": {
+      "main": [
+        [
+          {
+            "node": "Build Patch Command",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build Invalid Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Patch Command": {
+      "main": [
+        [
+          {
+            "node": "Call docker-bridge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call docker-bridge": {
+      "main": [
+        [
+          {
+            "node": "Parse Patch Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Patch Result": {
+      "main": [
+        [
+          {
+            "node": "Respond Result",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Log Generation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Invalid Response": {
+      "main": [
+        [
+          {
+            "node": "Respond Invalid",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Log Generation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": true
+  },
+  "pinData": {},
+  "tags": []
+}
