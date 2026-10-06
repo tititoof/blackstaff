@@ -177,7 +177,7 @@
       "parameters": {
         "mode": "runOnceForAllItems",
         "language": "javaScript",
-        "jsCode": "var TS_SYNTAX_CHECK_SRC = \"#!/usr/bin/env node\\n'use strict';\\nconst ts = require('typescript');\\nconst fs = require('fs');\\nconst file = process.argv[2];\\nconst source = fs.readFileSync(file, 'utf8');\\nconst sourceFile = ts.createSourceFile(file, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);\\nconst diagnostics = sourceFile.parseDiagnostics || [];\\nif (diagnostics.length > 0) {\\n  console.error('Syntax error: ' + diagnostics[0].messageText);\\n  process.exit(1);\\n}\\nconsole.log('Syntax OK');\\nprocess.exit(0);\\n\";\nvar item = $json;\nvar checkB64 = Buffer.from(TS_SYNTAX_CHECK_SRC).toString('base64');\nvar scriptB64 = Buffer.from(item.content).toString('base64');\nvar sh = \"mkdir -p \\\"$(dirname '\" + item.targetFile + \"')\\\" tmp/qwen_assemble && echo '\" + checkB64 + \"' | base64 -d > tmp/qwen_assemble/ts_syntax_check.cjs && echo '\" + scriptB64 + \"' | base64 -d > tmp/qwen_assemble/candidate.ts && node tmp/qwen_assemble/ts_syntax_check.cjs tmp/qwen_assemble/candidate.ts && cp tmp/qwen_assemble/candidate.ts '\" + item.targetFile + \"'\";\nreturn [{ json: {\n  targetFile: item.targetFile,\n  content: item.content,\n  dockerBridgePayload: { container: item.container, args: ['sh', '-c', sh] }\n} }];"
+        "jsCode": "// Échappement shell : une valeur venant de la requête ne doit jamais sortir de ses apostrophes\nfunction shq(s) { return \"'\" + String(s).replace(/'/g, \"'\\\\''\") + \"'\"; }\nvar TS_SYNTAX_CHECK_SRC = \"#!/usr/bin/env node\\n'use strict';\\nconst ts = require('typescript');\\nconst fs = require('fs');\\nconst file = process.argv[2];\\nconst source = fs.readFileSync(file, 'utf8');\\nconst sourceFile = ts.createSourceFile(file, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);\\nconst diagnostics = sourceFile.parseDiagnostics || [];\\nif (diagnostics.length > 0) {\\n  console.error('Syntax error: ' + diagnostics[0].messageText);\\n  process.exit(1);\\n}\\nconsole.log('Syntax OK');\\nprocess.exit(0);\\n\";\nvar item = $json;\nvar checkB64 = Buffer.from(TS_SYNTAX_CHECK_SRC).toString('base64');\nvar scriptB64 = Buffer.from(item.content).toString('base64');\nvar sh = \"mkdir -p \\\"$(dirname \" + shq(item.targetFile) + \")\\\" tmp/qwen_assemble && echo '\" + checkB64 + \"' | base64 -d > tmp/qwen_assemble/ts_syntax_check.cjs && echo '\" + scriptB64 + \"' | base64 -d > tmp/qwen_assemble/candidate.ts && node tmp/qwen_assemble/ts_syntax_check.cjs tmp/qwen_assemble/candidate.ts && cp tmp/qwen_assemble/candidate.ts \" + shq(item.targetFile);\nreturn [{ json: {\n  targetFile: item.targetFile,\n  content: item.content,\n  dockerBridgePayload: { container: item.container, args: ['sh', '-c', sh] }\n} }];"
       }
     },
     {
@@ -192,13 +192,20 @@
       "parameters": {
         "method": "POST",
         "url": "http://docker-bridge:3001/exec",
-        "authentication": "none",
+        "authentication": "genericCredentialType",
         "sendBody": true,
         "contentType": "json",
         "specifyBody": "json",
         "jsonBody": "={{ $json.dockerBridgePayload }}",
         "options": {
           "timeout": 60000
+        },
+        "genericAuthType": "httpHeaderAuth"
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "r3XC0qF9UJ1Ln1KO",
+          "name": "Header Docker Bridge"
         }
       }
     },

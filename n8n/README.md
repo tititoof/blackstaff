@@ -31,6 +31,8 @@ n8n import:workflow --input=blackstaff-code-generator.json
   n8n) : planification, décomposition, relecture du plan
 - `Anthropic account` : analyse fonctionnelle et fiches de faits (Claude Haiku)
 - `Ollama account` : workflows `qwen-*`
+- `Header Docker Bridge` (Header Auth) : en-tête `Authorization: Bearer <jeton>`
+  envoyé à `docker-bridge` par les workflows `qwen-*`
 
 **Tables de données n8n** :
 
@@ -46,7 +48,13 @@ re-sélectionner après l'import.
 
 - `project-ollama:11434` : Ollama, avec `qwen2.5-coder:7b` (et `3b` en option).
 - `docker-bridge:3001` : exécute une commande dans le conteneur du projet cible
-  (vérification de syntaxe, écriture du fichier, patch AST, tests).
+  (vérification de syntaxe, écriture du fichier, patch AST, tests). Il n'accepte
+  que les conteneurs de sa liste blanche et exige un jeton Bearer. Aucun port
+  n'est publié : seul n8n le joint, par le réseau Docker.
+
+**Jeton docker-bridge** : un fichier monté en lecture seule dans n8n à
+`/run/secrets/docker-bridge-token`, lu par les nœuds Code du générateur (07x,
+07y, 07z, 04g1, 07c). La même valeur va dans l'identifiant `Header Docker Bridge`.
 
 **Volume** : les projets et ce dépôt sont montés dans n8n sous
 `/home/node/projets/` (ce dépôt en `/home/node/projets/blackstaff/`).

@@ -177,7 +177,7 @@
       "parameters": {
         "mode": "runOnceForAllItems",
         "language": "javaScript",
-        "jsCode": "var item = $json;\nvar scriptB64 = Buffer.from(item.content).toString('base64');\nvar sh = \"mkdir -p \\\"$(dirname '\" + item.targetFile + \"')\\\" tmp/qwen_assemble && echo '\" + scriptB64 + \"' | base64 -d > tmp/qwen_assemble/candidate.rb && ruby -c tmp/qwen_assemble/candidate.rb && cp tmp/qwen_assemble/candidate.rb '\" + item.targetFile + \"'\";\nreturn [{ json: {\n  targetFile: item.targetFile,\n  content: item.content,\n  dockerBridgePayload: { container: item.container, args: ['sh', '-c', sh] }\n} }];"
+        "jsCode": "// Échappement shell : une valeur venant de la requête ne doit jamais sortir de ses apostrophes\nfunction shq(s) { return \"'\" + String(s).replace(/'/g, \"'\\\\''\") + \"'\"; }\nvar item = $json;\nvar scriptB64 = Buffer.from(item.content).toString('base64');\nvar sh = \"mkdir -p \\\"$(dirname \" + shq(item.targetFile) + \")\\\" tmp/qwen_assemble && echo '\" + scriptB64 + \"' | base64 -d > tmp/qwen_assemble/candidate.rb && ruby -c tmp/qwen_assemble/candidate.rb && cp tmp/qwen_assemble/candidate.rb \" + shq(item.targetFile);\nreturn [{ json: {\n  targetFile: item.targetFile,\n  content: item.content,\n  dockerBridgePayload: { container: item.container, args: ['sh', '-c', sh] }\n} }];"
       }
     },
     {
@@ -192,13 +192,20 @@
       "parameters": {
         "method": "POST",
         "url": "http://docker-bridge:3001/exec",
-        "authentication": "none",
+        "authentication": "genericCredentialType",
         "sendBody": true,
         "contentType": "json",
         "specifyBody": "json",
         "jsonBody": "={{ $json.dockerBridgePayload }}",
         "options": {
           "timeout": 60000
+        },
+        "genericAuthType": "httpHeaderAuth"
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "r3XC0qF9UJ1Ln1KO",
+          "name": "Header Docker Bridge"
         }
       }
     },
